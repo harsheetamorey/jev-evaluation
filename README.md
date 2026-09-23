@@ -27,6 +27,8 @@ uv run python src/experiments/multilingual.py --providers jev,gemini:gemini-2.0-
 
 uv run python scripts/build_choice_scaling_sample.py   # (re)generate data/samples/massive_choice_scaling*
 uv run python src/experiments/choice_scaling.py   # Experiment C: accuracy vs. candidate-set size (K)
+
+uv run python src/experiments/fanout.py   # Experiment D: latency vs. number of simultaneous questions (not accuracy)
 ```
 
 Cost estimates (`estimated_cost_usd`) are `null` until you fill in real,
