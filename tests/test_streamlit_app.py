@@ -10,6 +10,7 @@ from pathlib import Path
 import pandas as pd
 import pytest
 from streamlit.testing.v1 import AppTest
+from typesafe_sdk import TypeSafeError
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "app"))
 
@@ -145,12 +146,23 @@ def test_each_tab_selectable_without_exception(tab_index: int) -> None:
     assert not at.exception
 
 
-def test_try_it_yourself_classify_without_key_shows_clean_error_not_a_crash() -> None:
-    """No API key exists in this environment, so this exercises the actual
-    real failure path a fresh clone would hit -- the app must catch it and
-    display it, not crash the whole script (see the try/except in
-    render_try_it_yourself around the live Jev call).
+def _raise_no_key(*args, **kwargs):
+    raise TypeSafeError("No API key was provided. Pass api_key or set the TYPESAFE_API_KEY environment variable.")
+
+
+def test_try_it_yourself_classify_without_key_shows_clean_error_not_a_crash(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Simulates the no-key failure deterministically via a monkeypatched
+    AsyncJevClient, rather than depending on whether this environment's .env
+    happens to have a real key -- otherwise this test would make a real live
+    Jev call (and fail its assertion) whenever a real key is configured, as
+    happened once a real TYPESAFE_API_KEY was added during this session.
+
+    Still exercises the real code path: the try/except in
+    render_try_it_yourself around the live Jev call must catch this and
+    display it, not crash the whole script.
     """
+    monkeypatch.setattr("clients.jev_client.AsyncJevClient", _raise_no_key)
+
     at = AppTest.from_file(APP_PATH, default_timeout=30)
     at.run()
 
