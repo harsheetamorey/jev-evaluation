@@ -21,6 +21,9 @@ def compute_metrics(df: pd.DataFrame) -> dict[str, Any]:
             "error_rate": None,
             "confidence_when_correct": None,
             "confidence_when_incorrect": None,
+            "total_input_tokens": None,
+            "total_output_tokens": None,
+            "total_estimated_cost_usd": None,
         }
 
     scored = df["correct"].notna()
@@ -31,6 +34,12 @@ def compute_metrics(df: pd.DataFrame) -> dict[str, Any]:
         values = series.dropna()
         return float(values.mean()) if not values.empty else None
 
+    def _sum_or_none(col: str) -> float | None:
+        if col not in df:
+            return None
+        values = df[col].dropna()
+        return float(values.sum()) if not values.empty else None
+
     return {
         "n": total,
         "accuracy": float(df.loc[scored, "correct"].astype(bool).mean()) if scored.any() else None,
@@ -39,12 +48,48 @@ def compute_metrics(df: pd.DataFrame) -> dict[str, Any]:
         "error_rate": float(df["error"].notna().mean()),
         "confidence_when_correct": _mean_or_none(df.loc[correct_mask, "confidence"]),
         "confidence_when_incorrect": _mean_or_none(df.loc[incorrect_mask, "confidence"]),
+        "total_input_tokens": _sum_or_none("input_tokens"),
+        "total_output_tokens": _sum_or_none("output_tokens"),
+        "total_estimated_cost_usd": _sum_or_none("estimated_cost_usd"),
     }
 
 
 def compute_metrics_by_group(df: pd.DataFrame, group_col: str) -> dict[str, dict[str, Any]]:
     """`compute_metrics()` applied separately to each value of `group_col` (e.g. "locale")."""
     return {str(key): compute_metrics(group_df) for key, group_df in df.groupby(group_col, sort=True)}
+
+
+_COMPARISON_ROWS = [
+    ("accuracy", "accuracy"),
+    ("p50 latency (ms)", "p50_latency_ms"),
+    ("p95 latency (ms)", "p95_latency_ms"),
+    ("error rate", "error_rate"),
+    ("input tokens", "total_input_tokens"),
+    ("output tokens", "total_output_tokens"),
+    ("estimated cost (usd)", "total_estimated_cost_usd"),
+]
+
+
+def format_comparison_table(by_provider: dict[str, dict[str, Any]]) -> str:
+    """Render a side-by-side comparison table from compute_metrics_by_group(df, "provider").
+
+    Column headers are each provider's exact label (e.g. "jev", "gpt-4o-mini") --
+    never a generic "LLM" column.
+    """
+    providers = list(by_provider)
+    col_width = max((len(p) for p in providers), default=0) + 2
+    label_width = max(len(label) for label, _ in _COMPARISON_ROWS) + 2
+
+    def _cell(value: Any) -> str:
+        if isinstance(value, float):
+            return f"{value:.4g}"
+        return "-" if value is None else str(value)
+
+    lines = ["metric".ljust(label_width) + "".join(p.rjust(col_width) for p in providers)]
+    for label, key in _COMPARISON_ROWS:
+        row = label.ljust(label_width) + "".join(_cell(by_provider[p].get(key)).rjust(col_width) for p in providers)
+        lines.append(row)
+    return "\n".join(lines)
 
 
 def compute_cross_language_consistency(

@@ -21,6 +21,9 @@ def test_empty_dataframe_returns_all_none() -> None:
         "error_rate": None,
         "confidence_when_correct": None,
         "confidence_when_incorrect": None,
+        "total_input_tokens": None,
+        "total_output_tokens": None,
+        "total_estimated_cost_usd": None,
     }
 
 
@@ -65,6 +68,27 @@ def test_all_errored_gives_none_accuracy_and_confidence() -> None:
     assert metrics["confidence_when_correct"] is None
     assert metrics["confidence_when_incorrect"] is None
     assert metrics["error_rate"] == 1.0
+
+
+def test_token_and_cost_totals_are_summed() -> None:
+    df = pd.DataFrame(
+        [
+            {**_row(True, 0.9, 10), "input_tokens": 100, "output_tokens": 10, "estimated_cost_usd": 0.01},
+            {**_row(False, 0.4, 10), "input_tokens": 200, "output_tokens": 20, "estimated_cost_usd": 0.02},
+        ]
+    )
+    metrics = compute_metrics(df)
+    assert metrics["total_input_tokens"] == 300
+    assert metrics["total_output_tokens"] == 30
+    assert metrics["total_estimated_cost_usd"] == pytest.approx(0.03)
+
+
+def test_token_and_cost_totals_are_none_when_columns_absent() -> None:
+    df = pd.DataFrame([_row(True, 0.9, 10)])
+    metrics = compute_metrics(df)
+    assert metrics["total_input_tokens"] is None
+    assert metrics["total_output_tokens"] is None
+    assert metrics["total_estimated_cost_usd"] is None
 
 
 def _multilingual_row(example_id, locale, correct, confidence=0.9, latency_ms=10, error=None):

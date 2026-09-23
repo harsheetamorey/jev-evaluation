@@ -20,7 +20,14 @@ uv run python scripts/build_bitext_samples.py   # (re)generate data/samples/bite
 uv run python src/experiments/bitext_hard_choice.py   # Experiment A: hard-choice classification via Jev
 uv run python scripts/build_massive_samples.py   # (re)generate data/samples/massive_aligned_*.jsonl
 uv run python src/experiments/multilingual.py   # Experiment B: multilingual classification via Jev
+
+# Jev vs. a specific LLM (needs OPENAI_API_KEY and/or GEMINI_API_KEY in .env):
+uv run python src/experiments/bitext_hard_choice.py --providers jev,openai:gpt-4o-mini
+uv run python src/experiments/multilingual.py --providers jev,gemini:gemini-2.0-flash --locales en-US,hi-IN
 ```
+
+Cost estimates (`estimated_cost_usd`) are `null` until you fill in real,
+current rates per model in `src/evaluation/pricing.py` -- nothing is guessed.
 
 
 

@@ -1,13 +1,15 @@
-"""Unit tests for JevEvaluator's mapping from Jev responses to PredictionResult.
+"""Unit tests for SystemOneEvaluator's mapping from a System One response to PredictionResult.
 
 Uses a fake client (no network, no API key) so these run without credentials.
+The same evaluator is used for both Jev and any LLM run through TypeSafe's
+System One Adapter, so these tests aren't provider-specific.
 """
 
 import asyncio
 
 from typesafe_sdk import TypeSafeError
 
-from clients.jev_client import JevEvaluator
+from evaluation.runner import SystemOneEvaluator
 from models.prediction import Example
 
 
@@ -17,10 +19,30 @@ class _FakeAnswer:
         self.probabilities = probabilities
 
 
+class _FakeUsage:
+    def __init__(self, input_tokens=10, output_tokens=5, input_tokens_total=None, output_tokens_total=None) -> None:
+        self.input_tokens = input_tokens
+        self.output_tokens = output_tokens
+        # Only set when present -- mirrors the adapter's Usage subclass vs Jev's plain Usage.
+        if input_tokens_total is not None:
+            self.input_tokens_total = input_tokens_total
+        if output_tokens_total is not None:
+            self.output_tokens_total = output_tokens_total
+
+
 class _FakeResponse:
-    def __init__(self, choice: str, probabilities: dict[str, float], request_id: str | None = "req-abc") -> None:
+    def __init__(
+        self,
+        choice: str,
+        probabilities: dict[str, float],
+        request_id: str | None = "req-abc",
+        model: str = "fake-model",
+        usage: _FakeUsage | None = None,
+    ) -> None:
         self.choices = {"intent": _FakeAnswer(choice, probabilities)}
         self._request_id = request_id
+        self.model = model
+        self.usage = usage if usage is not None else _FakeUsage()
 
     @property
     def request_id(self) -> str:
@@ -56,10 +78,11 @@ def _example(**overrides) -> Example:
 
 def test_predict_maps_correct_choice_and_confidence() -> None:
     client = _FakeClient(response=_FakeResponse("track_order", {"track_order": 0.8, "cancel_order": 0.2}))
-    evaluator = JevEvaluator(client, experiment="unit-test")
+    evaluator = SystemOneEvaluator(client, experiment="unit-test", provider="jev")
 
     result = asyncio.run(evaluator.predict(_example()))
 
+    assert result.provider == "jev"
     assert result.prediction == "track_order"
     assert result.correct is True
     assert result.confidence == 0.8
@@ -68,9 +91,18 @@ def test_predict_maps_correct_choice_and_confidence() -> None:
     assert result.candidates == ["track_order", "cancel_order", "other"]
 
 
+def test_predict_uses_provider_as_the_explicit_model_label() -> None:
+    client = _FakeClient(response=_FakeResponse("x", {"x": 1.0}))
+    evaluator = SystemOneEvaluator(client, experiment="unit-test", provider="gpt-4o-mini")
+
+    result = asyncio.run(evaluator.predict(_example(candidates=["x", "y"])))
+
+    assert result.provider == "gpt-4o-mini"
+
+
 def test_predict_marks_incorrect_when_choice_mismatches_ground_truth() -> None:
     client = _FakeClient(response=_FakeResponse("other", {"other": 0.5}))
-    evaluator = JevEvaluator(client, experiment="unit-test")
+    evaluator = SystemOneEvaluator(client, experiment="unit-test", provider="jev")
 
     result = asyncio.run(evaluator.predict(_example(ground_truth="track_order")))
 
@@ -80,7 +112,7 @@ def test_predict_marks_incorrect_when_choice_mismatches_ground_truth() -> None:
 
 def test_predict_sends_state_and_criteria_built_from_candidates() -> None:
     client = _FakeClient(response=_FakeResponse("x", {"x": 1.0}))
-    evaluator = JevEvaluator(client, experiment="unit-test")
+    evaluator = SystemOneEvaluator(client, experiment="unit-test", provider="jev")
 
     asyncio.run(evaluator.predict(_example(state="hello world", candidates=["x", "y"])))
 
@@ -91,7 +123,7 @@ def test_predict_sends_state_and_criteria_built_from_candidates() -> None:
 
 def test_predict_records_error_without_raising() -> None:
     client = _FakeClient(error=TypeSafeError("simulated failure"))
-    evaluator = JevEvaluator(client, experiment="unit-test")
+    evaluator = SystemOneEvaluator(client, experiment="unit-test", provider="jev")
 
     result = asyncio.run(evaluator.predict(_example()))
 
@@ -103,8 +135,38 @@ def test_predict_records_error_without_raising() -> None:
 
 def test_predict_missing_request_id_does_not_raise() -> None:
     client = _FakeClient(response=_FakeResponse("track_order", {"track_order": 0.9}, request_id=None))
-    evaluator = JevEvaluator(client, experiment="unit-test")
+    evaluator = SystemOneEvaluator(client, experiment="unit-test", provider="jev")
 
     result = asyncio.run(evaluator.predict(_example()))
 
     assert result.request_id is None
+
+
+def test_predict_records_tokens_from_plain_usage() -> None:
+    client = _FakeClient(response=_FakeResponse("x", {"x": 1.0}, usage=_FakeUsage(input_tokens=12, output_tokens=7)))
+    evaluator = SystemOneEvaluator(client, experiment="unit-test", provider="jev")
+
+    result = asyncio.run(evaluator.predict(_example(candidates=["x", "y"])))
+
+    assert result.input_tokens == 12
+    assert result.output_tokens == 7
+
+
+def test_predict_prefers_cumulative_tokens_when_present() -> None:
+    usage = _FakeUsage(input_tokens=12, output_tokens=7, input_tokens_total=30, output_tokens_total=15)
+    client = _FakeClient(response=_FakeResponse("x", {"x": 1.0}, usage=usage))
+    evaluator = SystemOneEvaluator(client, experiment="unit-test", provider="gpt-4o-mini")
+
+    result = asyncio.run(evaluator.predict(_example(candidates=["x", "y"])))
+
+    assert result.input_tokens == 30
+    assert result.output_tokens == 15
+
+
+def test_predict_cost_is_none_without_a_pricing_entry() -> None:
+    client = _FakeClient(response=_FakeResponse("x", {"x": 1.0}, model="some-unpriced-model"))
+    evaluator = SystemOneEvaluator(client, experiment="unit-test", provider="jev")
+
+    result = asyncio.run(evaluator.predict(_example(candidates=["x", "y"])))
+
+    assert result.estimated_cost_usd is None

@@ -38,3 +38,6 @@ class PredictionResult:
 
     error: str | None
     request_id: str | None = None
+    input_tokens: int | None = None
+    output_tokens: int | None = None
+    estimated_cost_usd: float | None = None
