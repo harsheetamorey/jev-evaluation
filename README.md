@@ -33,6 +33,8 @@ uv run python src/experiments/fanout.py   # Experiment D: latency vs. number of 
 uv run python src/experiments/confidence.py   # Experiment E: confidence vs. correctness (run bitext_hard_choice.py first)
 
 uv run python src/experiments/routing_demo.py "I want to cancel my order"   # Experiment F: confidence-based routing (Jev fast path, LLM fallback)
+
+uv run python src/experiments/contract_evolution.py   # Experiment G: format reliability vs. decision correctness
 ```
 
 Cost estimates (`estimated_cost_usd`) are `null` until you fill in real,
