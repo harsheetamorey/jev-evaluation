@@ -1,0 +1,100 @@
+{"id": "13067", "locale": "en-US", "text": "can you create a sugar free diet for me and create a shopping list for the ingredients", "ground_truth": "general_quirky"}
+{"id": "2408", "locale": "en-US", "text": "search for more songs from the band", "ground_truth": "play_music"}
+{"id": "397", "locale": "en-US", "text": "play any song by joe prsaise", "ground_truth": "play_music"}
+{"id": "14126", "locale": "en-US", "text": "show bio of rihana", "ground_truth": "qa_factoid"}
+{"id": "5414", "locale": "en-US", "text": "will you put on the music", "ground_truth": "play_music"}
+{"id": "4917", "locale": "en-US", "text": "temperature outside", "ground_truth": "weather_query"}
+{"id": "4436", "locale": "en-US", "text": "what jacket should i wear", "ground_truth": "weather_query"}
+{"id": "3096", "locale": "en-US", "text": "how's the weather like in new jersey", "ground_truth": "weather_query"}
+{"id": "14083", "locale": "en-US", "text": "where jackie chan currently live", "ground_truth": "qa_factoid"}
+{"id": "2178", "locale": "en-US", "text": "what is the current weather condition in my place", "ground_truth": "weather_query"}
+{"id": "13451", "locale": "en-US", "text": "i would like my robot to feed and pet my dog when i'm not home", "ground_truth": "general_quirky"}
+{"id": "14118", "locale": "en-US", "text": "show geographic details of pyramids", "ground_truth": "qa_factoid"}
+{"id": "8245", "locale": "en-US", "text": "i would need to be notified of church services on sundays at eleven am", "ground_truth": "calendar_set"}
+{"id": "1722", "locale": "en-US", "text": "what is the minimum temperature of london", "ground_truth": "weather_query"}
+{"id": "8730", "locale": "en-US", "text": "please set a reminder in my calendar for my meeting on march twenty five", "ground_truth": "calendar_set"}
+{"id": "6737", "locale": "en-US", "text": "olly i am taking day off tomorrow", "ground_truth": "general_quirky"}
+{"id": "491", "locale": "en-US", "text": "is it cold outside", "ground_truth": "weather_query"}
+{"id": "473", "locale": "en-US", "text": "play the weekend", "ground_truth": "play_music"}
+{"id": "1933", "locale": "en-US", "text": "will there be a fall in temperature by tonight", "ground_truth": "weather_query"}
+{"id": "4376", "locale": "en-US", "text": "how is it outside today", "ground_truth": "weather_query"}
+{"id": "4587", "locale": "en-US", "text": "play my favorites", "ground_truth": "play_music"}
+{"id": "7697", "locale": "en-US", "text": "set a reminder for this", "ground_truth": "calendar_set"}
+{"id": "8967", "locale": "en-US", "text": "remind me two days before my wife birthday", "ground_truth": "calendar_set"}
+{"id": "407", "locale": "en-US", "text": "can you play rock music for the next hour", "ground_truth": "play_music"}
+{"id": "8387", "locale": "en-US", "text": "create reminder for laundry at eight p. m.", "ground_truth": "calendar_set"}
+{"id": "4040", "locale": "en-US", "text": "play the song i listen to the most", "ground_truth": "play_music"}
+{"id": "13854", "locale": "en-US", "text": "when did elvis die", "ground_truth": "qa_factoid"}
+{"id": "13175", "locale": "en-US", "text": "check celebrity where abouts", "ground_truth": "general_quirky"}
+{"id": "13681", "locale": "en-US", "text": "how many plays has patrick stewart been in", "ground_truth": "qa_factoid"}
+{"id": "14994", "locale": "en-US", "text": "what is denzel washington's next movie", "ground_truth": "qa_factoid"}
+{"id": "6720", "locale": "en-US", "text": "what do you know about fringe in edinburgh next year", "ground_truth": "general_quirky"}
+{"id": "4383", "locale": "en-US", "text": "what will the weather be tomorrow", "ground_truth": "weather_query"}
+{"id": "7044", "locale": "en-US", "text": "remind me to start getting ready by five p. m. please", "ground_truth": "calendar_set"}
+{"id": "8694", "locale": "en-US", "text": "the event will include walter and gemma", "ground_truth": "calendar_set"}
+{"id": "5465", "locale": "en-US", "text": "can i wear my sandals today", "ground_truth": "weather_query"}
+{"id": "185", "locale": "en-US", "text": "turn on my playlist and play third song in the queue", "ground_truth": "play_music"}
+{"id": "14339", "locale": "en-US", "text": "tell me about economy and g. d. p. about india versus china", "ground_truth": "general_quirky"}
+{"id": "3408", "locale": "en-US", "text": "is the weather going to be nice this weekend", "ground_truth": "weather_query"}
+{"id": "13616", "locale": "en-US", "text": "where do most celebrities hang out", "ground_truth": "qa_factoid"}
+{"id": "14958", "locale": "en-US", "text": "look up", "ground_truth": "general_quirky"}
+{"id": "6289", "locale": "en-US", "text": "hey what is the weather like today", "ground_truth": "weather_query"}
+{"id": "14683", "locale": "en-US", "text": "what is the hobby of ajay devgn", "ground_truth": "qa_factoid"}
+{"id": "3400", "locale": "en-US", "text": "play a live version of elton john", "ground_truth": "play_music"}
+{"id": "4313", "locale": "en-US", "text": "will there be rain tomorrow in rome", "ground_truth": "weather_query"}
+{"id": "14356", "locale": "en-US", "text": "i think i can travel the whole world in a day", "ground_truth": "general_quirky"}
+{"id": "6267", "locale": "en-US", "text": "what is your name", "ground_truth": "general_quirky"}
+{"id": "15055", "locale": "en-US", "text": "which pole is colder south or north", "ground_truth": "qa_factoid"}
+{"id": "1866", "locale": "en-US", "text": "weather report now", "ground_truth": "weather_query"}
+{"id": "6495", "locale": "en-US", "text": "can you please advise", "ground_truth": "general_quirky"}
+{"id": "1995", "locale": "en-US", "text": "play the beatles", "ground_truth": "play_music"}
+{"id": "6385", "locale": "en-US", "text": "what features do you have planned to release in the future", "ground_truth": "general_quirky"}
+{"id": "6295", "locale": "en-US", "text": "i hate how long the traffic jams get", "ground_truth": "general_quirky"}
+{"id": "8977", "locale": "en-US", "text": "just set me reminders about pending bill payments", "ground_truth": "calendar_set"}
+{"id": "5278", "locale": "en-US", "text": "please play only music of pop mix", "ground_truth": "play_music"}
+{"id": "779", "locale": "en-US", "text": "i want to hear snow by red hot chili peppers", "ground_truth": "play_music"}
+{"id": "14015", "locale": "en-US", "text": "what are the coordinates of the equator", "ground_truth": "qa_factoid"}
+{"id": "7152", "locale": "en-US", "text": "set lunch every day at twelve thirty", "ground_truth": "calendar_set"}
+{"id": "8079", "locale": "en-US", "text": "set a reminder in one hour for my bread to bake", "ground_truth": "calendar_set"}
+{"id": "2704", "locale": "en-US", "text": "let's hear some indie rock okay", "ground_truth": "play_music"}
+{"id": "6485", "locale": "en-US", "text": "what i like today", "ground_truth": "general_quirky"}
+{"id": "1547", "locale": "en-US", "text": "what's the weather for my location this week", "ground_truth": "weather_query"}
+{"id": "8289", "locale": "en-US", "text": "set a reminder about todays faculty meeting at four", "ground_truth": "calendar_set"}
+{"id": "5721", "locale": "en-US", "text": "show me tomorrows weather in this area", "ground_truth": "weather_query"}
+{"id": "9738", "locale": "en-US", "text": "could you please play the classical music for me", "ground_truth": "play_music"}
+{"id": "9153", "locale": "en-US", "text": "please add dinner with mary to my calendar on saturday", "ground_truth": "calendar_set"}
+{"id": "6405", "locale": "en-US", "text": "what sound does a dog make", "ground_truth": "general_quirky"}
+{"id": "8541", "locale": "en-US", "text": "remind me please", "ground_truth": "calendar_set"}
+{"id": "3911", "locale": "en-US", "text": "i want to hear any songs that got grammys this year", "ground_truth": "play_music"}
+{"id": "13693", "locale": "en-US", "text": "where is the prime meridian", "ground_truth": "qa_factoid"}
+{"id": "1401", "locale": "en-US", "text": "i occasionally pay attention", "ground_truth": "weather_query"}
+{"id": "782", "locale": "en-US", "text": "play let me love you by ariana grande", "ground_truth": "play_music"}
+{"id": "13297", "locale": "en-US", "text": "who is celebrity", "ground_truth": "qa_factoid"}
+{"id": "4482", "locale": "en-US", "text": "will i need to shovel my driveway this morning", "ground_truth": "weather_query"}
+{"id": "5658", "locale": "en-US", "text": "play for me the music by the beatles", "ground_truth": "play_music"}
+{"id": "1549", "locale": "en-US", "text": "will it rain this week", "ground_truth": "weather_query"}
+{"id": "14891", "locale": "en-US", "text": "in which field does that person excel in", "ground_truth": "qa_factoid"}
+{"id": "2108", "locale": "en-US", "text": "next play summer lovin", "ground_truth": "play_music"}
+{"id": "14509", "locale": "en-US", "text": "where did mahatma gandhi born", "ground_truth": "qa_factoid"}
+{"id": "14597", "locale": "en-US", "text": "what is the population of new york", "ground_truth": "qa_factoid"}
+{"id": "7073", "locale": "en-US", "text": "search my calendar for my next event and notify me before it occurs", "ground_truth": "calendar_set"}
+{"id": "12987", "locale": "en-US", "text": "can you track my emotions based on the way i speak", "ground_truth": "general_quirky"}
+{"id": "6424", "locale": "en-US", "text": "hello how is your day", "ground_truth": "general_quirky"}
+{"id": "3434", "locale": "en-US", "text": "best rap music", "ground_truth": "play_music"}
+{"id": "6438", "locale": "en-US", "text": "today i searched all over for my phone and couldn't find it", "ground_truth": "general_quirky"}
+{"id": "6353", "locale": "en-US", "text": "i need to buy gas", "ground_truth": "general_quirky"}
+{"id": "4232", "locale": "en-US", "text": "play sleepyhead by passion pit", "ground_truth": "play_music"}
+{"id": "13363", "locale": "en-US", "text": "when will the world end", "ground_truth": "general_quirky"}
+{"id": "5318", "locale": "en-US", "text": "please play only are rehman's songs", "ground_truth": "play_music"}
+{"id": "14787", "locale": "en-US", "text": "what is the difference between roman and grigorean calendar", "ground_truth": "qa_factoid"}
+{"id": "13491", "locale": "en-US", "text": "please give me the winning lottery numbers for this weekend", "ground_truth": "general_quirky"}
+{"id": "13150", "locale": "en-US", "text": "can you cook something special for me and my wife", "ground_truth": "general_quirky"}
+{"id": "1440", "locale": "en-US", "text": "play the latest rock songs having rating of four or above", "ground_truth": "play_music"}
+{"id": "9043", "locale": "en-US", "text": "upcoming events in calendar", "ground_truth": "calendar_set"}
+{"id": "14306", "locale": "en-US", "text": "explain the geographical location of india", "ground_truth": "qa_factoid"}
+{"id": "3539", "locale": "en-US", "text": "please play shake it off by taylor swiftm", "ground_truth": "play_music"}
+{"id": "8035", "locale": "en-US", "text": "remind me to get the oil changed", "ground_truth": "calendar_set"}
+{"id": "14011", "locale": "en-US", "text": "what is dolly parton's birthday", "ground_truth": "qa_factoid"}
+{"id": "15094", "locale": "en-US", "text": "look up the number of people living in miami florida", "ground_truth": "qa_factoid"}
+{"id": "3447", "locale": "en-US", "text": "does the weather call for rain saturday", "ground_truth": "weather_query"}
+{"id": "7170", "locale": "en-US", "text": "it's my mother's birthday today send me a notification every year on this date", "ground_truth": "calendar_set"}

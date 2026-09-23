@@ -10,6 +10,7 @@ reject outright.
 
 import json
 import random
+from collections import Counter
 from dataclasses import asdict, dataclass
 from pathlib import Path
 
@@ -27,6 +28,14 @@ LOCALES = ["en-US", "hi-IN", "kn-IN", "ta-IN", "te-IN", "es-ES", "fr-FR", "ja-JP
 SAMPLES_DIR = Path("data/samples")
 ALIGNED_SAMPLE_SIZES = {"aligned_100": 100, "aligned_250": 250}
 DEFAULT_SEED = 42
+
+# Choice-scaling experiment (K candidate intents): en-US test-partition intent
+# frequencies range from 1 to 209 rows (median 35), so an arbitrary or random K=5
+# subset risks landing on a near-empty intent. Ranking by frequency and taking
+# prefixes keeps every K's pool as large as possible while staying deterministic.
+CHOICE_SCALING_LOCALE = "en-US"
+CHOICE_SCALING_K_VALUES = [5, 10, 25, 60]
+CHOICE_SCALING_SAMPLE_SIZE = 100
 
 # The 60 MASSIVE intent labels, captured from the dataset's own ClassLabel feature
 # (order matters: it's how `intent` integer codes map back to names).
@@ -139,19 +148,60 @@ def build_aligned_sample(rows_by_locale: dict[str, list[MassiveRow]], ids: list[
     return rows
 
 
-def to_example(row: MassiveRow) -> Example:
+def to_example(row: MassiveRow, candidates: list[str] | None = None) -> Example:
     """Adapt a MassiveRow into the generic Example shape evaluators consume.
 
-    Every request classifies among all 60 MASSIVE intents, per the experiment design.
+    Defaults to classifying among all 60 MASSIVE intents; pass a narrower
+    `candidates` list for experiments that vary the candidate-set size (see
+    the choice-scaling functions below). Either way, `row.ground_truth` must
+    be a member of `candidates` for the example to be meaningful.
     """
     return Example(
         example_id=row.id,
         dataset="massive",
         state=row.text,
-        candidates=INTENTS,
+        candidates=candidates if candidates is not None else INTENTS,
         ground_truth=row.ground_truth,
         locale=row.locale,
     )
+
+
+def rank_intents_by_frequency(rows: list[MassiveRow]) -> list[str]:
+    """Order all 60 intents by descending frequency in `rows`, ties broken alphabetically.
+
+    Deterministic and independent of `rows`' order -- only the counts matter.
+    """
+    counts = Counter(row.ground_truth for row in rows)
+    return sorted(INTENTS, key=lambda intent: (-counts.get(intent, 0), intent))
+
+
+def build_choice_scaling_subsets(
+    intent_order: list[str],
+    k_values: list[int] = CHOICE_SCALING_K_VALUES,
+) -> dict[int, list[str]]:
+    """K-sized prefixes of `intent_order`, so smaller-K subsets nest inside larger ones."""
+    return {k: intent_order[:k] for k in k_values}
+
+
+def select_choice_scaling_sample(
+    rows: list[MassiveRow],
+    smallest_subset: list[str],
+    n: int = CHOICE_SCALING_SAMPLE_SIZE,
+    seed: int = DEFAULT_SEED,
+) -> list[MassiveRow]:
+    """Deterministically sample `n` rows whose ground_truth is in `smallest_subset` (K=5).
+
+    Because every larger K's subset is a superset of the smallest one, this exact
+    sample of examples stays valid -- and identical -- at every K, isolating
+    candidate-set size as the only variable across the comparison.
+    """
+    pool = [row for row in rows if row.ground_truth in smallest_subset]
+    if len(pool) < n:
+        raise ValueError(
+            f"Only {len(pool)} examples have ground_truth in the smallest intent subset "
+            f"{smallest_subset!r}; need at least {n}."
+        )
+    return random.Random(seed).sample(pool, n)
 
 
 def save_sample(rows: list[MassiveRow], name: str, samples_dir: Path = SAMPLES_DIR) -> Path:

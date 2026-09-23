@@ -14,10 +14,13 @@ from dataset_loaders.massive import (
     MassiveRow,
     _normalize_row,
     build_aligned_sample,
+    build_choice_scaling_subsets,
     load_all_locales,
     load_sample,
+    rank_intents_by_frequency,
     sample_aligned_ids,
     save_sample,
+    select_choice_scaling_sample,
     shared_ids,
     to_example,
     validate_aligned_consistency,
@@ -120,6 +123,59 @@ def test_to_example_uses_all_60_intents_as_candidates(rows_by_locale: dict[str, 
     assert example.locale == "hi-IN"
     assert example.candidates == INTENTS
     assert example.ground_truth == row.ground_truth
+
+
+def test_to_example_accepts_a_narrower_candidate_list(rows_by_locale: dict[str, list[MassiveRow]]) -> None:
+    row = rows_by_locale["en-US"][0]
+    subset = [row.ground_truth, "alarm_set", "play_music"]
+    example = to_example(row, candidates=subset)
+    assert example.candidates == subset
+
+
+def test_rank_intents_by_frequency_is_deterministic_and_covers_all_60() -> None:
+    rows = [
+        MassiveRow(id="1", locale="en-US", text="a", ground_truth="alarm_set"),
+        MassiveRow(id="2", locale="en-US", text="b", ground_truth="alarm_set"),
+        MassiveRow(id="3", locale="en-US", text="c", ground_truth="play_music"),
+    ]
+    order_a = rank_intents_by_frequency(rows)
+    order_b = rank_intents_by_frequency(rows)
+    assert order_a == order_b
+    assert set(order_a) == set(INTENTS)
+    assert order_a[0] == "alarm_set"  # 2 occurrences, most frequent
+    assert order_a[1] == "play_music"  # 1 occurrence, next most frequent
+
+
+def test_rank_intents_by_frequency_breaks_ties_alphabetically() -> None:
+    # No rows at all -> every intent is a 0-count tie -> alphabetical order.
+    order = rank_intents_by_frequency([])
+    assert order == sorted(INTENTS)
+
+
+def test_build_choice_scaling_subsets_are_nested_prefixes() -> None:
+    order = sorted(INTENTS)  # any fixed order works for this structural check
+    subsets = build_choice_scaling_subsets(order, k_values=[5, 10, 25, 60])
+
+    assert [len(subsets[k]) for k in (5, 10, 25, 60)] == [5, 10, 25, 60]
+    assert set(subsets[5]) <= set(subsets[10]) <= set(subsets[25]) <= set(subsets[60])
+    assert subsets[60] == order
+
+
+def test_select_choice_scaling_sample_is_deterministic_and_within_subset() -> None:
+    rows = [MassiveRow(id=str(i), locale="en-US", text=str(i), ground_truth="alarm_set") for i in range(20)]
+    rows += [MassiveRow(id="other", locale="en-US", text="x", ground_truth="play_music")]
+
+    first = select_choice_scaling_sample(rows, ["alarm_set"], n=10, seed=42)
+    second = select_choice_scaling_sample(rows, ["alarm_set"], n=10, seed=42)
+
+    assert [row.id for row in first] == [row.id for row in second]
+    assert all(row.ground_truth == "alarm_set" for row in first)
+
+
+def test_select_choice_scaling_sample_raises_if_pool_too_small() -> None:
+    rows = [MassiveRow(id="1", locale="en-US", text="a", ground_truth="alarm_set")]
+    with pytest.raises(ValueError, match="Only 1 examples"):
+        select_choice_scaling_sample(rows, ["alarm_set"], n=10, seed=42)
 
 
 def test_save_and_load_sample_round_trips(tmp_path: Path, rows_by_locale: dict[str, list[MassiveRow]]) -> None:
