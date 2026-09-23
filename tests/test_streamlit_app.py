@@ -19,6 +19,7 @@ from streamlit_app import (  # noqa: E402
     filter_experiment_prefix,
     load_fanout_df,
     load_results_df,
+    mean_choices_by_group,
     metrics_table,
     overview_dashboard,
 )
@@ -85,10 +86,29 @@ def test_filter_experiment_prefix() -> None:
 
 
 def test_metrics_table_has_expected_columns() -> None:
-    df = pd.DataFrame([_bitext_row(provider="jev"), _bitext_row(provider="gpt-4o-mini", correct=False)])
     table = metrics_table({"jev": {"accuracy": 1.0, "p50_latency_ms": 100, "p95_latency_ms": 100, "error_rate": 0.0, "n": 1}})
     assert "Accuracy" in table.columns
     assert "n" in table.columns
+    assert "# choices" not in table.columns  # omitted unless choices_by_group is passed
+
+
+def test_metrics_table_includes_choices_column_when_given() -> None:
+    table = metrics_table(
+        {"jev": {"accuracy": 1.0, "p50_latency_ms": 100, "p95_latency_ms": 100, "error_rate": 0.0, "n": 1}},
+        choices_by_group={"jev": 5.0},
+    )
+    assert table.loc["jev", "# choices"] == 5.0
+
+
+def test_mean_choices_by_group() -> None:
+    df = pd.DataFrame(
+        [
+            {**_bitext_row(provider="jev"), "candidates": ["a", "b", "c", "d", "e"]},
+            {**_bitext_row(provider="gpt-4o-mini"), "candidates": list("abcdefghij")},
+        ]
+    )
+    result = mean_choices_by_group(df, "provider")
+    assert result == {"jev": 5.0, "gpt-4o-mini": 10.0}
 
 
 def test_overview_dashboard_groups_by_experiment() -> None:

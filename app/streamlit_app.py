@@ -86,7 +86,12 @@ def filter_experiment_prefix(df: pd.DataFrame, prefix: str) -> pd.DataFrame:
     return df[df["experiment"].str.startswith(prefix)]
 
 
-def metrics_table(by_group: dict[str, dict[str, Any]]) -> pd.DataFrame:
+def mean_choices_by_group(df: pd.DataFrame, group_col: str) -> dict[str, float]:
+    """Mean number of candidate choices offered, per group -- "decision complexity"."""
+    return df.groupby(group_col)["candidates"].apply(lambda s: s.apply(len).mean()).to_dict()
+
+
+def metrics_table(by_group: dict[str, dict[str, Any]], choices_by_group: dict[str, float] | None = None) -> pd.DataFrame:
     """Turn compute_metrics_by_group()'s output into a display-ready DataFrame."""
     rows = []
     for key, metrics in by_group.items():
@@ -95,6 +100,8 @@ def metrics_table(by_group: dict[str, dict[str, Any]]) -> pd.DataFrame:
             row[label] = metrics.get(col)
         row["Confidence (mean, correct)"] = metrics.get("confidence_when_correct")
         row["Confidence (mean, incorrect)"] = metrics.get("confidence_when_incorrect")
+        if choices_by_group is not None:
+            row["# choices"] = choices_by_group.get(key)
         row["n"] = metrics.get("n")
         rows.append(row)
     return pd.DataFrame(rows).set_index("")
@@ -123,7 +130,7 @@ def choice_scaling_table(df: pd.DataFrame) -> pd.DataFrame:
 
 def overview_dashboard(df: pd.DataFrame) -> pd.DataFrame:
     """The primary cross-experiment metrics table for the Overview tab."""
-    return metrics_table(compute_metrics_by_group(df, "experiment"))
+    return metrics_table(compute_metrics_by_group(df, "experiment"), mean_choices_by_group(df, "experiment"))
 
 
 # ---------------------------------------------------------------------------
@@ -170,7 +177,7 @@ def render_hard_choices(df: pd.DataFrame | None) -> None:
     if subset.empty:
         _no_data_message("src/experiments/bitext_hard_choice.py")
         return
-    st.dataframe(metrics_table(compute_metrics_by_group(subset, "provider")))
+    st.dataframe(metrics_table(compute_metrics_by_group(subset, "provider"), mean_choices_by_group(subset, "provider")))
     _download_button(subset, "Download raw results (CSV)", "bitext_hard_choice.csv")
 
 
@@ -240,7 +247,7 @@ def render_jev_vs_llm(df: pd.DataFrame | None) -> None:
     if len(providers) < 2:
         st.info(f"Only one provider ({providers[0] if providers else 'none'}) has recorded results for {chosen!r}. "
                 f"Run it again with e.g. --providers jev,openai:gpt-4o-mini to compare.")
-    st.dataframe(metrics_table(compute_metrics_by_group(subset, "provider")))
+    st.dataframe(metrics_table(compute_metrics_by_group(subset, "provider"), mean_choices_by_group(subset, "provider")))
     _download_button(subset, "Download raw results (CSV)", f"{chosen}_by_provider.csv")
 
 
