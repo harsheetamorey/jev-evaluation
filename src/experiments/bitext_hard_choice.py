@@ -62,7 +62,7 @@ async def run(sample_size: int, concurrency: int, output: Path) -> dict:
     run_df = load_results(output).query("run_id == @config.run_id")
     metrics = compute_metrics(run_df)
 
-    metrics_path = output.parent / f"{output.stem}_metrics.json"
+    metrics_path = output.parent / f"{output.stem}_{EXPERIMENT_NAME}_metrics.json"
     metrics_path.write_text(json.dumps({"experiment": EXPERIMENT_NAME, "run_id": config.run_id, **metrics}, indent=2))
 
     print(f"run_id: {config.run_id}")

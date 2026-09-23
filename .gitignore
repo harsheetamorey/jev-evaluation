@@ -15,3 +15,6 @@ wheels/
 # Generated results (keep the directory via .gitkeep)
 data/results/*
 !data/results/.gitkeep
+
+# macOS
+.DS_Store

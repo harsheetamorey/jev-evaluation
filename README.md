@@ -18,6 +18,8 @@ uv run pytest
 uv run python scripts/smoke_test.py   # one live Jev call, prints choice + latency
 uv run python scripts/build_bitext_samples.py   # (re)generate data/samples/bitext_*.jsonl
 uv run python src/experiments/bitext_hard_choice.py   # Experiment A: hard-choice classification via Jev
+uv run python scripts/build_massive_samples.py   # (re)generate data/samples/massive_aligned_*.jsonl
+uv run python src/experiments/multilingual.py   # Experiment B: multilingual classification via Jev
 ```
 
 

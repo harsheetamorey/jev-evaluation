@@ -3,7 +3,7 @@
 import pandas as pd
 import pytest
 
-from evaluation.metrics import compute_metrics
+from evaluation.metrics import compute_cross_language_consistency, compute_metrics, compute_metrics_by_group
 
 
 def _row(correct, confidence, latency_ms, error=None):
@@ -65,3 +65,53 @@ def test_all_errored_gives_none_accuracy_and_confidence() -> None:
     assert metrics["confidence_when_correct"] is None
     assert metrics["confidence_when_incorrect"] is None
     assert metrics["error_rate"] == 1.0
+
+
+def _multilingual_row(example_id, locale, correct, confidence=0.9, latency_ms=10, error=None):
+    return {
+        "example_id": example_id,
+        "locale": locale,
+        "correct": correct,
+        "confidence": confidence,
+        "latency_ms": latency_ms,
+        "error": error,
+    }
+
+
+def test_compute_metrics_by_group_splits_correctly() -> None:
+    df = pd.DataFrame(
+        [
+            _multilingual_row("1", "en-US", True),
+            _multilingual_row("2", "en-US", False),
+            _multilingual_row("1", "hi-IN", True),
+            _multilingual_row("2", "hi-IN", True),
+        ]
+    )
+    by_locale = compute_metrics_by_group(df, "locale")
+    assert set(by_locale) == {"en-US", "hi-IN"}
+    assert by_locale["en-US"]["accuracy"] == 0.5
+    assert by_locale["hi-IN"]["accuracy"] == 1.0
+    assert by_locale["en-US"]["n"] == 2
+
+
+def test_cross_language_consistency_histogram() -> None:
+    df = pd.DataFrame(
+        [
+            # id "1": correct in both locales -> 2/2
+            _multilingual_row("1", "en-US", True),
+            _multilingual_row("1", "hi-IN", True),
+            # id "2": correct in one of two locales -> 1/2
+            _multilingual_row("2", "en-US", True),
+            _multilingual_row("2", "hi-IN", False),
+            # id "3": errored in one locale, counts as not-agreeing -> 1/2
+            _multilingual_row("3", "en-US", True),
+            _multilingual_row("3", "hi-IN", None, confidence=None, error="boom"),
+        ]
+    )
+    result = compute_cross_language_consistency(df)
+
+    breakdown_by_id = {entry["id"]: entry for entry in result["per_id"]}
+    assert breakdown_by_id["1"] == {"id": "1", "correct_locales": 2, "total_locales": 2}
+    assert breakdown_by_id["2"] == {"id": "2", "correct_locales": 1, "total_locales": 2}
+    assert breakdown_by_id["3"] == {"id": "3", "correct_locales": 1, "total_locales": 2}
+    assert result["histogram"] == {"2/2": 1, "1/2": 2}
