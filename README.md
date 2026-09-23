@@ -35,10 +35,22 @@ uv run python src/experiments/confidence.py   # Experiment E: confidence vs. cor
 uv run python src/experiments/routing_demo.py "I want to cancel my order"   # Experiment F: confidence-based routing (Jev fast path, LLM fallback)
 
 uv run python src/experiments/contract_evolution.py   # Experiment G: format reliability vs. decision correctness
+
+uv run streamlit run app/streamlit_app.py   # interactive dashboard + Try It Yourself playground
 ```
 
 Cost estimates (`estimated_cost_usd`) are `null` until you fill in real,
 current rates per model in `src/evaluation/pricing.py` -- nothing is guessed.
+
+## Dashboard
+
+`app/streamlit_app.py` has 8 tabs: Overview, Hard Choices, Multilingual,
+Choice Scaling, Parallel Decisions, Jev vs LLM, Confidence, and Try It
+Yourself (type a message, pick a mode, and watch TEXT → JEV → TYPED DECISION
+→ CODE happen live against your own `TYPESAFE_API_KEY`). Every tab that
+reads recorded results handles "nothing recorded yet" gracefully and tells
+you which script to run first. Raw rows are always downloadable as CSV
+alongside the summary tables.
 
 
 

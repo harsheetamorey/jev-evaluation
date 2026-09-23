@@ -171,10 +171,14 @@ async def run_one(client: AsyncJevClient, message_id: str, text: str, n: int) ->
     )
 
 
-def summarize(results: list[FanoutResult]) -> pd.DataFrame:
-    """Mean total latency / latency-per-question / tokens per question count, across messages."""
-    df = pd.DataFrame([asdict(r) for r in results])
-    summary = (
+def aggregate_results(df: pd.DataFrame) -> pd.DataFrame:
+    """Mean total latency / latency-per-question / tokens per question count, across messages.
+
+    Takes a DataFrame shaped like FanoutResult rows (e.g. loaded straight from
+    a saved fanout_results.parquet) -- see `summarize()` for the list-of-results
+    entry point used when results are still in memory.
+    """
+    return (
         df.groupby("num_questions")
         .agg(
             total_latency_ms=("total_latency_ms", "mean"),
@@ -187,7 +191,11 @@ def summarize(results: list[FanoutResult]) -> pd.DataFrame:
         .reset_index()
         .sort_values("num_questions")
     )
-    return summary
+
+
+def summarize(results: list[FanoutResult]) -> pd.DataFrame:
+    """Mean total latency / latency-per-question / tokens per question count, across messages."""
+    return aggregate_results(pd.DataFrame([asdict(r) for r in results]))
 
 
 def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
