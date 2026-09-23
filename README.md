@@ -16,6 +16,8 @@ uv sync
 cp .env.example .env   # then fill in TYPESAFE_API_KEY
 uv run pytest
 uv run python scripts/smoke_test.py   # one live Jev call, prints choice + latency
+uv run python scripts/build_bitext_samples.py   # (re)generate data/samples/bitext_*.jsonl
+uv run python src/experiments/bitext_hard_choice.py   # Experiment A: hard-choice classification via Jev
 ```
 
 

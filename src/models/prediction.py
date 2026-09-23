@@ -37,3 +37,4 @@ class PredictionResult:
     candidates: list[str]
 
     error: str | None
+    request_id: str | None = None

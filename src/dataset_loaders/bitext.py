@@ -13,6 +13,8 @@ from pathlib import Path
 
 from datasets import load_dataset
 
+from models.prediction import Example
+
 DATASET_NAME = "crossingminds/bitext_customer_support_mcq"
 SPLIT = "test"
 
@@ -78,6 +80,18 @@ def load_sample(name: str, samples_dir: Path = SAMPLES_DIR) -> list[BitextRow]:
     path = samples_dir / f"bitext_{name}.jsonl"
     with path.open(encoding="utf-8") as f:
         return [BitextRow(**json.loads(line)) for line in f]
+
+
+def to_example(row: BitextRow) -> Example:
+    """Adapt a BitextRow into the generic Example shape evaluators consume."""
+    return Example(
+        example_id=row.id,
+        dataset="bitext",
+        state=row.text,
+        candidates=row.choices,
+        ground_truth=row.ground_truth,
+        locale=None,
+    )
 
 
 def build_all_samples(seed: int = DEFAULT_SEED, samples_dir: Path = SAMPLES_DIR) -> dict[str, Path]:
