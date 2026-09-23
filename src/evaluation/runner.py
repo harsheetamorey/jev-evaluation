@@ -83,6 +83,7 @@ class SystemOneEvaluator:
                 candidates=example.candidates,
                 error=str(exc),
                 request_id=getattr(exc, "request_id", None),
+                text=example.state,
             )
 
         latency_ms = (time.perf_counter() - start) * 1000
@@ -117,6 +118,7 @@ class SystemOneEvaluator:
             input_tokens=input_tokens,
             output_tokens=output_tokens,
             estimated_cost_usd=estimate_cost_usd(response.model, input_tokens, output_tokens),
+            text=example.state,
         )
 
 

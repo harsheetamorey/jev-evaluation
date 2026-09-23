@@ -89,6 +89,7 @@ def test_predict_maps_correct_choice_and_confidence() -> None:
     assert result.error is None
     assert result.request_id == "req-abc"
     assert result.candidates == ["track_order", "cancel_order", "other"]
+    assert result.text == "Where is my order?"
 
 
 def test_predict_uses_provider_as_the_explicit_model_label() -> None:
@@ -131,6 +132,7 @@ def test_predict_records_error_without_raising() -> None:
     assert result.correct is None
     assert result.confidence is None
     assert result.error == "simulated failure"
+    assert result.text == "Where is my order?"
 
 
 def test_predict_missing_request_id_does_not_raise() -> None:

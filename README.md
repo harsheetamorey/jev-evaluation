@@ -29,6 +29,8 @@ uv run python scripts/build_choice_scaling_sample.py   # (re)generate data/sampl
 uv run python src/experiments/choice_scaling.py   # Experiment C: accuracy vs. candidate-set size (K)
 
 uv run python src/experiments/fanout.py   # Experiment D: latency vs. number of simultaneous questions (not accuracy)
+
+uv run python src/experiments/confidence.py   # Experiment E: confidence vs. correctness (run bitext_hard_choice.py first)
 ```
 
 Cost estimates (`estimated_cost_usd`) are `null` until you fill in real,
