@@ -1,0 +1,69 @@
+{
+  "construction": "overlapping = truth + K-1 labels from the truth's family; distinct = truth + K-1 labels from K-1 different other families; seeded; all real Bitext labels",
+  "dataset": "dataset",
+  "experiment": "choice_overlap",
+  "families": {
+    "account": [
+      "create_account",
+      "delete_account",
+      "edit_account",
+      "switch_account",
+      "registration_problems",
+      "recover_password"
+    ],
+    "contact": [
+      "contact_customer_service",
+      "contact_human_agent",
+      "complaint"
+    ],
+    "invoice": [
+      "check_invoice",
+      "get_invoice"
+    ],
+    "newsletter": [
+      "newsletter_subscription"
+    ],
+    "order": [
+      "cancel_order",
+      "change_order",
+      "place_order",
+      "track_order",
+      "check_cancellation_fee"
+    ],
+    "payment": [
+      "check_payment_methods",
+      "payment_issue"
+    ],
+    "refund": [
+      "get_refund",
+      "track_refund",
+      "check_refund_policy"
+    ],
+    "review": [
+      "review"
+    ],
+    "shipping": [
+      "change_shipping_address",
+      "set_up_shipping_address",
+      "delivery_options",
+      "delivery_period"
+    ]
+  },
+  "generation_method": "deterministic seeded construction; no model",
+  "k_values": [
+    3,
+    4
+  ],
+  "n_rows": 400,
+  "n_source_examples": 100,
+  "n_sources_requested": 100,
+  "phase1_baseline": "Phase I choice-scaling / Bitext K=5 results are the existing baseline; not repeated here",
+  "review_status": "pending_human_review",
+  "schema_version": 1,
+  "set_types": [
+    "distinct",
+    "overlapping"
+  ],
+  "sha256": "ff34fe77e80729712f2c03d8c48af1bcbadd0b7b9f73aae0b0e087dd31dfc580",
+  "source": "data/samples/bitext_main.jsonl via select_bitext_sources"
+}
