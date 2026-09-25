@@ -1,0 +1,31 @@
+{
+  "dataset": "dataset",
+  "experiment": "noise",
+  "generation_method": "deterministic pure functions of (text, source_example_id, seed, noise_type, severity); no model",
+  "n_rows": 2051,
+  "n_source_examples": 100,
+  "n_sources_requested": 100,
+  "noise_types": [
+    "typos",
+    "missing_punctuation",
+    "extra_punctuation",
+    "capitalization",
+    "whitespace",
+    "emoji",
+    "abbreviations",
+    "word_duplication"
+  ],
+  "review_status": "pending_human_review",
+  "schema_version": 1,
+  "seed": 6,
+  "semantic_integrity_rule": "questionable if char_ratio < 0.7 or token_recall < 0.5 (heuristic flag, not human-verified)",
+  "severities": [
+    0,
+    1,
+    2,
+    3
+  ],
+  "sha256": "482305d33857cfc7fcf50d6a6af5f553e772d229aa5d6775c0d2bc5d73619d87",
+  "source": "data/samples/bitext_main.jsonl via phase2.stress.select_bitext_sources",
+  "variants_skipped_because_text_unchanged_or_duplicate": 449
+}
