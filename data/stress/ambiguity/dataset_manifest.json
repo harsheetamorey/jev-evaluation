@@ -1,0 +1,62 @@
+{
+  "dataset": "dataset",
+  "experiment": "ambiguity",
+  "families": {
+    "account": [
+      "create_account",
+      "delete_account",
+      "edit_account",
+      "switch_account",
+      "registration_problems",
+      "recover_password"
+    ],
+    "cancellation": [
+      "cancel_order",
+      "check_cancellation_fee"
+    ],
+    "contact": [
+      "contact_customer_service",
+      "contact_human_agent"
+    ],
+    "delivery": [
+      "delivery_options",
+      "delivery_period"
+    ],
+    "invoice": [
+      "check_invoice",
+      "get_invoice"
+    ],
+    "order": [
+      "cancel_order",
+      "change_order",
+      "place_order",
+      "track_order"
+    ],
+    "payment": [
+      "check_payment_methods",
+      "payment_issue"
+    ],
+    "refund": [
+      "get_refund",
+      "track_refund",
+      "check_refund_policy"
+    ],
+    "shipping_address": [
+      "change_shipping_address",
+      "set_up_shipping_address"
+    ]
+  },
+  "generation_method": "deterministic hand-authored templates (no model generation)",
+  "levels": [
+    "CLEAR",
+    "SLIGHTLY_AMBIGUOUS",
+    "HIGHLY_AMBIGUOUS"
+  ],
+  "n_rows": 300,
+  "n_source_examples": 100,
+  "n_sources_requested": 100,
+  "review_status": "pending_human_review",
+  "schema_version": 1,
+  "sha256": "d8e43581cf10102463a6c4cebfe28eb73628c1993f928ecd014d88fa1cb71b48",
+  "source": "data/samples/bitext_main.jsonl (Bitext test split, frozen main sample)"
+}
