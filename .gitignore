@@ -18,3 +18,15 @@ data/results/*
 
 # macOS
 .DS_Store
+
+# Local Claude instructions (not for GitHub)
+CLAUDE.md
+claude.md
+
+# Phase II baseline: track only the small manifest and dedup report, not raw result files
+!data/results/phase2/
+data/results/phase2/*
+!data/results/phase2/baseline/
+data/results/phase2/baseline/*
+!data/results/phase2/baseline/baseline_manifest.json
+!data/results/phase2/baseline/canonical_dedup_report.csv
