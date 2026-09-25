@@ -3,7 +3,7 @@
 import pandas as pd
 import pytest
 
-from evaluation.metrics import compute_cross_language_consistency, compute_metrics, compute_metrics_by_group
+from evaluation.metrics import compute_cross_language_consistency, compute_metrics, compute_metrics_by_group, wilson_ci
 
 
 def _row(correct, confidence, latency_ms, error=None):
@@ -16,6 +16,8 @@ def test_empty_dataframe_returns_all_none() -> None:
     assert metrics == {
         "n": 0,
         "accuracy": None,
+        "accuracy_ci_low": None,
+        "accuracy_ci_high": None,
         "p50_latency_ms": None,
         "p95_latency_ms": None,
         "error_rate": None,
@@ -139,3 +141,33 @@ def test_cross_language_consistency_histogram() -> None:
     assert breakdown_by_id["2"] == {"id": "2", "correct_locales": 1, "total_locales": 2}
     assert breakdown_by_id["3"] == {"id": "3", "correct_locales": 1, "total_locales": 2}
     assert result["histogram"] == {"2/2": 1, "1/2": 2}
+
+
+def test_wilson_ci_matches_known_values() -> None:
+    # Textbook check: 8/10 successes, 95% Wilson CI is approximately (0.492, 0.943).
+    low, high = wilson_ci(8, 10)
+    assert low == pytest.approx(0.492, abs=0.01)
+    assert high == pytest.approx(0.943, abs=0.01)
+
+
+def test_wilson_ci_is_symmetric_around_half_at_p_half() -> None:
+    low, high = wilson_ci(50, 100)
+    assert low == pytest.approx(1 - high, abs=1e-9)
+
+
+def test_wilson_ci_narrows_with_larger_n_at_same_proportion() -> None:
+    low_small, high_small = wilson_ci(80, 100)
+    low_large, high_large = wilson_ci(800, 1000)
+    assert (high_large - low_large) < (high_small - low_small)
+
+
+def test_wilson_ci_returns_none_for_zero_n() -> None:
+    assert wilson_ci(0, 0) == (None, None)
+
+
+def test_compute_metrics_includes_accuracy_confidence_interval() -> None:
+    df = pd.DataFrame([_row(True, 0.9, 10)] * 8 + [_row(False, 0.4, 10)] * 2)
+    metrics = compute_metrics(df)
+    assert metrics["accuracy"] == pytest.approx(0.8)
+    assert metrics["accuracy_ci_low"] < metrics["accuracy"] < metrics["accuracy_ci_high"]
+    assert metrics["accuracy_ci_low"] == pytest.approx(wilson_ci(8, 10)[0])

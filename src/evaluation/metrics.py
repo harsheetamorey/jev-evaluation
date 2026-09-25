@@ -1,12 +1,30 @@
 """Summary metrics computed from a results DataFrame (see evaluation.recorder)."""
 
+import math
 from typing import Any
 
 import pandas as pd
 
 
+def wilson_ci(successes: int, n: int, z: float = 1.96) -> tuple[float, float] | tuple[None, None]:
+    """Wilson score interval for a binomial proportion (default: 95% CI, z=1.96).
+
+    Preferred over the naive normal-approximation interval here since sample
+    sizes are sometimes small (e.g. n=100 per language) and accuracy can sit
+    near 0 or 1, where the normal approximation misbehaves.
+    """
+    if n == 0:
+        return None, None
+    phat = successes / n
+    denom = 1 + z**2 / n
+    center = phat + z**2 / (2 * n)
+    margin = z * math.sqrt(phat * (1 - phat) / n + z**2 / (4 * n**2))
+    return (center - margin) / denom, (center + margin) / denom
+
+
 def compute_metrics(df: pd.DataFrame) -> dict[str, Any]:
-    """Compute accuracy, latency percentiles, error rate, and confidence breakdowns.
+    """Compute accuracy (with a 95% Wilson CI), latency percentiles, error rate, and
+    confidence breakdowns.
 
     `correct` is `None` for errored predictions, so accuracy/confidence are computed
     only over scored (non-errored) rows; `error_rate` and latency cover every row.
@@ -16,6 +34,8 @@ def compute_metrics(df: pd.DataFrame) -> dict[str, Any]:
         return {
             "n": 0,
             "accuracy": None,
+            "accuracy_ci_low": None,
+            "accuracy_ci_high": None,
             "p50_latency_ms": None,
             "p95_latency_ms": None,
             "error_rate": None,
@@ -29,6 +49,8 @@ def compute_metrics(df: pd.DataFrame) -> dict[str, Any]:
     scored = df["correct"].notna()
     correct_mask = df["correct"].eq(True)
     incorrect_mask = df["correct"].eq(False)
+    n_scored = int(scored.sum())
+    n_correct = int(correct_mask.sum())
 
     def _mean_or_none(series: pd.Series) -> float | None:
         values = series.dropna()
@@ -40,9 +62,13 @@ def compute_metrics(df: pd.DataFrame) -> dict[str, Any]:
         values = df[col].dropna()
         return float(values.sum()) if not values.empty else None
 
+    ci_low, ci_high = wilson_ci(n_correct, n_scored) if n_scored else (None, None)
+
     return {
         "n": total,
-        "accuracy": float(df.loc[scored, "correct"].astype(bool).mean()) if scored.any() else None,
+        "accuracy": (n_correct / n_scored) if n_scored else None,
+        "accuracy_ci_low": ci_low,
+        "accuracy_ci_high": ci_high,
         "p50_latency_ms": float(df["latency_ms"].quantile(0.5)),
         "p95_latency_ms": float(df["latency_ms"].quantile(0.95)),
         "error_rate": float(df["error"].notna().mean()),

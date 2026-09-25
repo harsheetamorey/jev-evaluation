@@ -12,7 +12,9 @@ import pandas as pd
 import pytest
 
 from experiments.confidence import (
+    accuracy_at_thresholds,
     confidence_distribution_by_correctness,
+    confidence_histogram,
     confidently_wrong,
     load_scored_results,
     low_confidence_examples,
@@ -21,7 +23,7 @@ from experiments.confidence import (
 )
 
 
-def _row(example_id, correct, confidence, experiment="bitext_hard_choice", provider="jev", text="hello", error=None):
+def _row(example_id, correct, confidence, experiment="bitext_hard_choice", provider="jev", text="hello", error=None, run_id="run-1"):
     return {
         "example_id": example_id,
         "experiment": experiment,
@@ -34,6 +36,7 @@ def _row(example_id, correct, confidence, experiment="bitext_hard_choice", provi
         "correct": correct,
         "confidence": confidence,
         "error": error,
+        "run_id": run_id,
     }
 
 
@@ -149,3 +152,51 @@ def test_run_writes_summary_json(tmp_path: Path) -> None:
     assert summary["n_total"] == 6
     assert summary["n_confidently_wrong"] == 1
     assert (tmp_path / "confidence_summary.json").exists()
+
+
+def test_load_scored_results_filters_by_run_id(tmp_path: Path) -> None:
+    df_raw = _sample_df()
+    df_raw.loc[0, "run_id"] = "other-run"
+    path = tmp_path / "results.parquet"
+    df_raw.to_parquet(path, index=False)
+
+    filtered = load_scored_results(path, run_id="run-1")
+    assert "1" not in set(filtered["example_id"])
+    assert len(filtered) == 5  # 6 scored rows minus the one reassigned to "other-run"
+
+
+def test_accuracy_at_thresholds_reports_coverage_and_accuracy() -> None:
+    df = _sample_df().dropna(subset=["correct"])  # 3 correct (0.95, 0.90, 0.40), 3 wrong (0.92, 0.30, 0.20)
+    result = accuracy_at_thresholds(df, thresholds=[0.5, 0.9])
+
+    row_50 = result[result["threshold"] == 0.5].iloc[0]
+    # >=0.5: correct 0.95, 0.90; wrong 0.92 -> 2 correct, 1 wrong, coverage 3/6
+    assert row_50["n"] == 3
+    assert row_50["n_correct"] == 2
+    assert row_50["n_wrong"] == 1
+    assert row_50["coverage"] == pytest.approx(0.5)
+    assert row_50["accuracy"] == pytest.approx(2 / 3)
+
+    row_90 = result[result["threshold"] == 0.9].iloc[0]
+    # >=0.9: correct 0.95, 0.90; wrong 0.92 -> same 3 rows here too
+    assert row_90["n"] == 3
+    assert row_90["accuracy"] == pytest.approx(2 / 3)
+
+
+def test_accuracy_at_thresholds_handles_empty_coverage() -> None:
+    df = _sample_df().dropna(subset=["correct"])
+    result = accuracy_at_thresholds(df, thresholds=[0.999])
+    row = result.iloc[0]
+    assert row["n"] == 0
+    assert row["accuracy"] is None
+
+
+def test_confidence_histogram_counts_correct_and_wrong_per_bin() -> None:
+    df = _sample_df().dropna(subset=["correct"])
+    result = confidence_histogram(df, bins=[0.0, 0.5, 1.0])
+
+    # bin (0.0, 0.5]: correct=0.40 (1 correct), wrong=0.30,0.20 (2 wrong)
+    # bin (0.5, 1.0]: correct=0.95,0.90 (2 correct), wrong=0.92 (1 wrong)
+    totals = {False: result[False].sum(), True: result[True].sum()}
+    assert totals[True] == 3
+    assert totals[False] == 3

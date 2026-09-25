@@ -117,7 +117,13 @@ async def run(sample_size: int, concurrency: int, output: Path, locales: list[st
     summary = {
         "overall": compute_metrics(run_df),
         "by_provider": by_provider,
-        "by_locale": compute_metrics_by_group(run_df, "locale"),
+        # Per provider, then per locale -- pooling providers into one per-locale
+        # number would average Jev and an LLM together and report it as "the"
+        # accuracy for that language.
+        "by_locale": {
+            provider: compute_metrics_by_group(provider_df, "locale")
+            for provider, provider_df in run_df.groupby("provider")
+        },
         "cross_language_consistency": {
             provider: compute_cross_language_consistency(provider_df)
             for provider, provider_df in run_df.groupby("provider")
@@ -132,9 +138,11 @@ async def run(sample_size: int, concurrency: int, output: Path, locales: list[st
     print(f"summary: {summary_path}")
     print()
     print(format_comparison_table(by_provider))
-    print("\nby locale (accuracy / p50 / p95 / error_rate):")
-    for locale, m in summary["by_locale"].items():
-        print(f"  {locale:8s} {m['accuracy']}  {m['p50_latency_ms']}  {m['p95_latency_ms']}  {m['error_rate']}")
+    print("\nby locale (accuracy / p50 ms / error rate):")
+    for provider, locales in summary["by_locale"].items():
+        print(f"  {provider}:")
+        for locale, m in sorted(locales.items()):
+            print(f"    {locale:8s} {m['accuracy']:.3f}  {m['p50_latency_ms']:>7.0f}  {m['error_rate']:.3f}")
     print("\ncross-language consistency histogram per provider (correct_locales/total_locales -> count of IDs):")
     for provider, consistency in summary["cross_language_consistency"].items():
         print(f"  {provider}: {json.dumps(consistency['histogram'])}")

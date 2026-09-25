@@ -22,7 +22,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 import pandas as pd  # noqa: E402
 
-from clients.jev_client import AsyncJevClient  # noqa: E402
+from clients.factory import build_client  # noqa: E402
 from dataset_loaders.massive import (  # noqa: E402
     CHOICE_SCALING_K_VALUES,
     DEFAULT_SEED,
@@ -54,6 +54,12 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
         default=DEFAULT_RESULTS_PATH,
         help=f"Parquet file to append raw results to (default: {DEFAULT_RESULTS_PATH}).",
     )
+    parser.add_argument(
+        "--providers",
+        type=lambda s: [p.strip() for p in s.split(",") if p.strip()],
+        default=["jev"],
+        help="Comma-separated providers to run and compare, e.g. 'jev,openai:gpt-4o-mini' (default: jev).",
+    )
     return parser.parse_args(argv)
 
 
@@ -62,7 +68,8 @@ def _load_subsets() -> dict[int, list[str]]:
     return {int(k): v for k, v in data["subsets"].items()}
 
 
-async def run(concurrency: int, output: Path) -> list[dict]:
+async def run(concurrency: int, output: Path, providers: list[str] | None = None) -> list[dict]:
+    providers = providers or ["jev"]
     subsets = _load_subsets()
     rows = load_sample(SAMPLE_NAME)
 
@@ -74,28 +81,36 @@ async def run(concurrency: int, output: Path) -> list[dict]:
             raise ValueError(f"K={k}: {len(missing_ground_truth)} example(s) have ground_truth outside the K-choice set, e.g. {missing_ground_truth[:5]}.")
         examples = [to_example(row, candidates=candidates) for row in rows]
 
-        config = ExperimentConfig(name=EXPERIMENT_NAME, dataset=f"massive:choice_scaling:k{k}", providers=("jev",), seed=DEFAULT_SEED)
+        for spec in providers:
+            client, label = build_client(spec)
+            config = ExperimentConfig(
+                name=EXPERIMENT_NAME,
+                dataset=f"massive:choice_scaling:k{k}",
+                providers=(label,),
+                seed=DEFAULT_SEED,
+            )
 
-        async with AsyncJevClient() as client:
-            evaluator = SystemOneEvaluator(client, experiment=f"{EXPERIMENT_NAME}_k{k}", provider="jev")
-            results = await run_evaluation_async(evaluator, examples, concurrency=concurrency)
+            async with client:
+                evaluator = SystemOneEvaluator(client, experiment=f"{EXPERIMENT_NAME}_k{k}", provider=label)
+                results = await run_evaluation_async(evaluator, examples, concurrency=concurrency)
 
-        append_results(results, config, path=output)
+            append_results(results, config, path=output)
 
-        run_df = load_results(output).query("run_id == @config.run_id")
-        metrics = compute_metrics(run_df)
-        confidence = run_df["confidence"].dropna()
+            run_df = load_results(output).query("run_id == @config.run_id")
+            metrics = compute_metrics(run_df)
+            confidence = run_df["confidence"].dropna()
 
-        row = {
-            "num_choices": k,
-            "accuracy": metrics["accuracy"],
-            "p50_latency_ms": metrics["p50_latency_ms"],
-            "p95_latency_ms": metrics["p95_latency_ms"],
-            "mean_confidence": float(confidence.mean()) if not confidence.empty else None,
-            "n": metrics["n"],
-        }
-        tidy_rows.append(row)
-        print(f"K={k:>2}: accuracy={row['accuracy']} p50={row['p50_latency_ms']}ms p95={row['p95_latency_ms']}ms mean_confidence={row['mean_confidence']} n={row['n']}")
+            row = {
+                "provider": label,
+                "num_choices": k,
+                "accuracy": metrics["accuracy"],
+                "p50_latency_ms": metrics["p50_latency_ms"],
+                "p95_latency_ms": metrics["p95_latency_ms"],
+                "mean_confidence": float(confidence.mean()) if not confidence.empty else None,
+                "n": metrics["n"],
+            }
+            tidy_rows.append(row)
+            print(f"{label:>12} K={k:>2}: accuracy={row['accuracy']} p50={row['p50_latency_ms']:.0f}ms p95={row['p95_latency_ms']:.0f}ms conf={row['mean_confidence']} n={row['n']}")
 
     table_path = output.parent / f"{output.stem}_{EXPERIMENT_NAME}_table.csv"
     pd.DataFrame(tidy_rows).to_csv(table_path, index=False)
@@ -105,7 +120,7 @@ async def run(concurrency: int, output: Path) -> list[dict]:
 
 def main() -> None:
     args = parse_args()
-    asyncio.run(run(args.concurrency, args.output))
+    asyncio.run(run(args.concurrency, args.output, args.providers))
 
 
 if __name__ == "__main__":

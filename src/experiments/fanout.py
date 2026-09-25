@@ -28,7 +28,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 import pandas as pd  # noqa: E402
 from typesafe_sdk import Choice, Noul, Question, Score, TypeSafeError  # noqa: E402
 
-from clients.jev_client import AsyncJevClient  # noqa: E402
+from clients.factory import build_client  # noqa: E402
 from dataset_loaders.bitext import DEFAULT_SEED, load_sample  # noqa: E402
 from evaluation.recorder import DEFAULT_RESULTS_PATH  # noqa: E402
 
@@ -131,6 +131,7 @@ class FanoutResult:
     input_tokens: int | None
     output_tokens: int | None
     error: str | None
+    provider: str = "jev"
 
 
 def build_questions(n: int) -> dict[str, Question]:
@@ -140,7 +141,7 @@ def build_questions(n: int) -> dict[str, Question]:
     return dict(QUESTION_SPECS[:n])
 
 
-async def run_one(client: AsyncJevClient, message_id: str, text: str, n: int) -> FanoutResult:
+async def run_one(client, message_id: str, text: str, n: int, provider: str = "jev") -> FanoutResult:
     questions = build_questions(n)
     start = time.perf_counter()
     try:
@@ -156,6 +157,7 @@ async def run_one(client: AsyncJevClient, message_id: str, text: str, n: int) ->
             input_tokens=None,
             output_tokens=None,
             error=str(exc),
+            provider=provider,
         )
 
     latency_ms = (time.perf_counter() - start) * 1000
@@ -167,6 +169,7 @@ async def run_one(client: AsyncJevClient, message_id: str, text: str, n: int) ->
         input_chars=len(text),
         input_tokens=response.usage.input_tokens,
         output_tokens=response.usage.output_tokens,
+        provider=provider,
         error=None,
     )
 
@@ -178,8 +181,9 @@ def aggregate_results(df: pd.DataFrame) -> pd.DataFrame:
     a saved fanout_results.parquet) -- see `summarize()` for the list-of-results
     entry point used when results are still in memory.
     """
+    group_cols = ["provider", "num_questions"] if "provider" in df.columns and df["provider"].nunique() > 1 else ["num_questions"]
     return (
-        df.groupby("num_questions")
+        df.groupby(group_cols)
         .agg(
             total_latency_ms=("total_latency_ms", "mean"),
             latency_per_question_ms=("latency_per_question_ms", "mean"),
@@ -189,7 +193,7 @@ def aggregate_results(df: pd.DataFrame) -> pd.DataFrame:
             n_messages=("message_id", "count"),
         )
         .reset_index()
-        .sort_values("num_questions")
+        .sort_values(group_cols)
     )
 
 
@@ -212,21 +216,31 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
         default=DEFAULT_RESULTS_PATH.parent / "fanout_results.parquet",
         help="Parquet file for raw per-call fan-out results (default: data/results/fanout_results.parquet).",
     )
+    parser.add_argument(
+        "--providers",
+        type=lambda s: [p.strip() for p in s.split(",") if p.strip()],
+        default=["jev"],
+        help="Comma-separated providers to run and compare, e.g. 'jev,openai:gpt-4o-mini' (default: jev).",
+    )
     return parser.parse_args(argv)
 
 
-async def run(concurrency: int, output: Path) -> pd.DataFrame:
+async def run(concurrency: int, output: Path, providers: list[str] | None = None) -> pd.DataFrame:
+    providers = providers or ["jev"]
     messages = random.Random(DEFAULT_SEED).sample(load_sample("dev"), N_MESSAGES)
 
     semaphore = asyncio.Semaphore(concurrency)
 
-    async def bound(client: AsyncJevClient, message_id: str, text: str, n: int) -> FanoutResult:
+    async def bound(client, message_id: str, text: str, n: int, label: str) -> FanoutResult:
         async with semaphore:
-            return await run_one(client, message_id, text, n)
+            return await run_one(client, message_id, text, n, provider=label)
 
-    async with AsyncJevClient() as client:
-        tasks = [bound(client, row.id, row.text, n) for row in messages for n in QUESTION_COUNTS]
-        results = await asyncio.gather(*tasks)
+    results: list[FanoutResult] = []
+    for spec in providers:
+        client, label = build_client(spec)
+        async with client:
+            tasks = [bound(client, row.id, row.text, n, label) for row in messages for n in QUESTION_COUNTS]
+            results.extend(await asyncio.gather(*tasks))
 
     output.parent.mkdir(parents=True, exist_ok=True)
     pd.DataFrame([asdict(r) for r in results]).to_parquet(output, index=False)
@@ -243,7 +257,7 @@ async def run(concurrency: int, output: Path) -> pd.DataFrame:
 
 def main() -> None:
     args = parse_args()
-    asyncio.run(run(args.concurrency, args.output))
+    asyncio.run(run(args.concurrency, args.output, args.providers))
 
 
 if __name__ == "__main__":
