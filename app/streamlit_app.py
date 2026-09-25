@@ -1,7 +1,11 @@
 """Interactive dashboard + playground for jev-decision-lab.
 
 Tabs: Overview, Hard Choices, Multilingual, Choice Scaling, Parallel
-Decisions, Jev vs LLM, Confidence, Try It Yourself. Reads from the shared
+Decisions, Jev vs LLM, Confidence, Try It Yourself, then the Phase II tabs
+(Calibration, Risk / Coverage, Stability, Context Stress, OOD, Adversarial,
+Multilingual Reliability, Failure Museum, Cascade Simulator -- see
+app/phase2_tabs.py; they only READ precomputed artifacts under
+data/results/phase2/ and never call a model). Reads from the shared
 data/results/results.parquet (written by the experiment scripts) and
 data/results/fanout_results.parquet (fan-out has its own schema -- see
 experiments/fanout.py). Every tab handles the "no data recorded yet" case
@@ -16,9 +20,11 @@ import asyncio
 import sys
 import time
 from pathlib import Path
+from types import SimpleNamespace
 from typing import Any
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "src"))
+sys.path.insert(0, str(Path(__file__).resolve().parent))  # for phase2_tabs
 
 import altair as alt  # noqa: E402
 import pandas as pd  # noqa: E402
@@ -48,6 +54,7 @@ from experiments.fanout import build_questions as build_fanout_questions  # noqa
 from experiments.routing_demo import DEFAULT_CANDIDATES as ROUTING_DEFAULT_CANDIDATES  # noqa: E402
 from experiments.routing_demo import execute_route  # noqa: E402
 from models.prediction import Example  # noqa: E402
+from phase2_tabs import PHASE2_TABS, phase2_renderers  # noqa: E402
 
 FANOUT_RESULTS_PATH = DEFAULT_RESULTS_PATH.parent / "fanout_results.parquet"
 
@@ -1557,6 +1564,7 @@ def main() -> None:
             "Jev vs LLM",
             "Confidence",
             "Try It Yourself",
+            *PHASE2_TABS,
         ]
     )
     with tabs[0]:
@@ -1575,6 +1583,13 @@ def main() -> None:
         render_confidence(results_df)
     with tabs[7]:
         render_try_it_yourself()
+
+    # Phase II tabs are appended after the Phase I tabs (indexes 0-7 are unchanged). They only read
+    # precomputed artifacts; no tab makes a Jev or LLM call.
+    ui = SimpleNamespace(section=_section, callout=_callout, kpi_html=_kpi_html, altair_theme=_altair_theme, no_data=_no_data_message)
+    for offset, render in enumerate(phase2_renderers()):
+        with tabs[8 + offset]:
+            render(ui)
 
 
 if __name__ == "__main__":
