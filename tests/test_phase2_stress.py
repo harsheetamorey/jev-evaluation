@@ -184,3 +184,10 @@ def test_grouped_paired_metrics_and_empty_pairs() -> None:
     g = grouped_paired_metrics(paired, ["kind"]).set_index("kind")
     assert g.loc["x", "decision_flip_rate"] == 0.0 and g.loc["y", "decision_flip_rate"] == 1.0
     assert paired_metrics(paired.iloc[0:0])["n_pairs"] == 0
+
+
+def test_live_run_sends_a_rows_state_payload_when_present(tmp_path: Path) -> None:
+    client = _Client("a")
+    rows = [row("v1"), {**row("v2"), "state_payload": {"message": "hello", "history": ["x", "y"]}}]
+    asyncio.run(execute_live("exp", rows, "stress:exp", ["jev"], tmp_path, 2, client_factory=lambda spec: (client, spec)))
+    assert {"user_message": "hello"} in client.calls and {"message": "hello", "history": ["x", "y"]} in client.calls

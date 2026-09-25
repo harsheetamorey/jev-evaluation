@@ -16,6 +16,7 @@ Row contract for a frozen dataset (JSONL, one object per line):
     text               what is sent as the state message
     candidates         the allowed choices
     ground_truth       single expected label, or null when no single label is defensible
+    state_payload      optional: a structured state (e.g. {"message", "history"}) sent instead of {"user_message": text}
     ...                any experiment-specific fields (kept verbatim and joined onto results)
 """
 
@@ -280,6 +281,9 @@ async def execute_live(
         from clients.factory import build_client as client_factory  # imported lazily: keeps dry-run paths client-free
 
     examples = [row_to_example(r, dataset) for r in rows]
+    if state_builder is default_state:  # rows may carry a structured `state_payload` (e.g. message + history)
+        payloads = {r["variant_id"]: r["state_payload"] for r in rows if r.get("state_payload") is not None}
+        state_builder = lambda e: payloads.get(e.example_id, default_state(e))  # noqa: E731
     written: list[Path] = []
     for spec in provider_specs:
         client, label = client_factory(spec)
