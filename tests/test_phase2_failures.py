@@ -10,6 +10,7 @@ from dataset_loaders.massive import LOCALES
 from phase2.baseline import BaselineError
 from phase2.failures import (
     ADAPTERS,
+    json_safe,
     COLUMNS,
     FAILURE_TAGS,
     assemble,
@@ -179,3 +180,26 @@ def test_run_failures_end_to_end_writes_outputs_reports_missing_and_refuses_over
     assert rerun_ids == [x["failure_id"] for x in lines]  # same inputs -> same ids, same order
     with pytest.raises(BaselineError, match="Refusing to overwrite"):
         run_failures(baseline, phase2, out, verify=False)
+
+
+def test_jsonl_output_is_strict_json_with_no_nan_tokens(tmp_path: Path) -> None:
+    baseline = tmp_path / "b"
+    baseline.mkdir()
+    canonical_rows().to_parquet(baseline / "canonical_results.parquet", index=False)  # non-multilingual rows have a NaN/None locale
+    out = tmp_path / "out"
+    run_failures(baseline, tmp_path / "p", out, verify=False)
+
+    def reject(token: str):
+        raise ValueError(f"non-strict JSON constant {token}")
+
+    for line in (out / "failures.jsonl").read_text().splitlines():
+        rec = json.loads(line, parse_constant=reject)  # NaN / Infinity would raise here
+        assert rec["locale"] is None or isinstance(rec["locale"], str)
+
+
+def test_json_safe_converts_nan_and_numpy_values() -> None:
+    import numpy as np
+
+    got = json_safe({"a": float("nan"), "b": np.float64(0.5), "c": [np.int64(3), float("nan")], "d": None, "e": "x"})
+    assert got == {"a": None, "b": 0.5, "c": [3, None], "d": None, "e": "x"}
+    json.dumps(got, allow_nan=False)

@@ -54,6 +54,19 @@ def confidence_tags(confidence: float | None, high: float = HIGH_CONFIDENCE_THRE
     return (["high_confidence_wrong"] if c >= high else []) + (["low_confidence_wrong"] if c <= low else [])
 
 
+def json_safe(v: Any) -> Any:
+    """Recursively turn NaN/NaT/numpy scalars into strict-JSON values (null, int, float, str)."""
+    if isinstance(v, dict):
+        return {k: json_safe(x) for k, x in v.items()}
+    if isinstance(v, (list, tuple)):
+        return [json_safe(x) for x in v]
+    if hasattr(v, "item") and not isinstance(v, (list, dict)):
+        v = v.item()
+    if v is None or (isinstance(v, float) and v != v):
+        return None
+    return v
+
+
 def _clean(v: Any) -> Any:
     return None if v is None or (not isinstance(v, (list, dict)) and pd.isna(v)) else v
 
@@ -250,7 +263,7 @@ def run_failures(baseline_dir: Path = BASELINE_DIR, phase2_dir: Path = PHASE2_RE
     out_dir.mkdir(parents=True, exist_ok=True)
     with (out_dir / "failures.jsonl").open("w", encoding="utf-8") as fh:
         for rec in df.to_dict("records"):
-            fh.write(json.dumps({k: (v if not hasattr(v, "item") else v.item()) for k, v in rec.items()}, ensure_ascii=False, default=str, sort_keys=True) + "\n")
+            fh.write(json.dumps(json_safe(rec), ensure_ascii=False, default=str, sort_keys=True, allow_nan=False) + "\n")  # strict JSON: NaN would be invalid
     flat = df.assign(failure_tags=df["failure_tags"].map("|".join), metadata=df["metadata"].map(lambda m: json.dumps(m, default=str, sort_keys=True)))
     flat.to_csv(out_dir / "failures.csv", index=False)
     (out_dir / "failures_summary.json").write_text(json.dumps(summary, indent=2, default=str))
