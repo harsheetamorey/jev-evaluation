@@ -47,8 +47,9 @@ current rates per model in `src/evaluation/pricing.py` -- nothing is guessed.
 `app/streamlit_app.py` has 8 tabs: Overview, Hard Choices, Multilingual,
 Choice Scaling, Parallel Decisions, Jev vs LLM, Confidence, and Try It
 Yourself (type a message, pick a mode, and watch TEXT → JEV → TYPED DECISION
-→ CODE happen live against your own `TYPESAFE_API_KEY`). Every tab that
-reads recorded results handles "nothing recorded yet" gracefully and tells
+→ CODE happen live against your own `TYPESAFE_API_KEY`). 
+
+Every tab that reads recorded results handles "nothing recorded yet" gracefully and tells
 you which script to run first. Raw rows are always downloadable as CSV
 alongside the summary tables.
 
