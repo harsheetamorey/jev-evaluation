@@ -1,0 +1,28 @@
+{
+  "conditions": [
+    "no_context",
+    "irrelevant_context",
+    "relevant_context"
+  ],
+  "dataset": "dataset",
+  "experiment": "context_relevance",
+  "generation_method": "hand-authored triplets written once by the project author (no model generation); candidates are the real Bitext choice set for the expected intent",
+  "n_rows": 90,
+  "n_source_examples": 30,
+  "n_triplets": 30,
+  "relevance_establishment": "vague target + cue phrases only in the relevant history + keyword validator (see module docstring); not proof, hence human review",
+  "review_status": "pending_human_review",
+  "schema_version": 1,
+  "sha256": "9c343b97ce009e2ff222d9bdc5257bb5f5d9d0c1a9025a73262e9d0938062f27",
+  "state_shape": {
+    "no_context": {
+      "message": "<target>"
+    },
+    "others": {
+      "history": [
+        "<one history sentence>"
+      ],
+      "message": "<target>"
+    }
+  }
+}
