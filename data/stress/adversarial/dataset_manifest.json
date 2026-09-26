@@ -27,6 +27,9 @@
   "payload_position": "appended after '\\n\\n'",
   "review_status": "pending_human_review",
   "schema_version": 1,
+  "seed": 20260924,
+  "seed_note": "SOURCE_SEED seeds the selection of source examples (select_bitext_sources). Each source's incorrect target is a stable_int hash of the source id (no further seed); attack templates are fixed.",
+  "seed_status": "recorded",
   "sha256": "1808a48a261dce0b19c06aeb2937948c7a4ad04f61134cc6ef40df74a6b9e976",
   "source": "data/samples/bitext_main.jsonl via select_bitext_sources",
   "target_rule": "deterministic incorrect candidate: sorted(wrong candidates)[stable_int('adversarial-target', source_id) % n]"

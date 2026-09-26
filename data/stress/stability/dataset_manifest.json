@@ -2,24 +2,31 @@
   "dataset": "dataset",
   "duplicate_variants_dropped": {
     "surface_compress": 81,
-    "surface_lowercase_nopunct": 33,
-    "surface_typo": 1
+    "surface_lowercase_nopunct": 49,
+    "surface_typo": 2
   },
   "experiment": "stability",
-  "generation_method": "surface: deterministic functions; paraphrase: hand-authored intent-level bank written once by the project author (no model generation)",
-  "n_rows": 785,
+  "family_meaning": {
+    "intent_paraphrase": "intent-preserving paraphrase robustness; does NOT preserve every source-specific detail",
+    "surface": "semantic/surface stability (meaning and details unchanged)"
+  },
+  "generation_method": "surface: deterministic functions; intent_paraphrase: hand-authored intent-level bank written once by the project author (no model generation)",
+  "n_rows": 768,
   "n_source_examples": 100,
   "n_sources_requested": 100,
-  "paraphrase_caveat": "paraphrases restate the intent, not each source message's specific details",
+  "protected_spans": "Bitext {{...}} placeholders are unchanged in every surface variant",
   "review_status": "pending_human_review",
   "schema_version": 1,
-  "sha256": "c75f57de8ae6f051ee73a7c343b9e5e47225ddc2becbc2d2acbbbe23f7375a1a",
+  "seed": 20260924,
+  "seed_note": "SOURCE_SEED seeds the selection of source examples (select_bitext_sources). Surface-typo position is a stable_int hash of the source id (no further seed); the intent paraphrases are hand-authored.",
+  "seed_status": "recorded",
+  "sha256": "5c1a0d885ea5bedfd6affb6d173064ced615e27b28c4f8cadf03860780c1ba0c",
   "source": "data/samples/bitext_main.jsonl via phase2.stress.select_bitext_sources",
   "variant_families": {
-    "paraphrase": [
-      "paraphrase_1",
-      "paraphrase_2",
-      "paraphrase_3"
+    "intent_paraphrase": [
+      "intent_paraphrase_1",
+      "intent_paraphrase_2",
+      "intent_paraphrase_3"
     ],
     "surface": [
       "surface_uppercase",

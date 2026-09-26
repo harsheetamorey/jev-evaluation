@@ -31,6 +31,7 @@ from phase2.stress import (
     paired_metrics,
     seeded_rng,
     select_bitext_sources,
+    source_selection_seed_fields,
     stable_int,
     top_margin,
 )
@@ -117,6 +118,7 @@ def build() -> tuple[list[dict[str, Any]], dict[str, Any]]:
     meta = {
         "experiment": NAME,
         "source": "data/samples/bitext_main.jsonl via select_bitext_sources",
+        **source_selection_seed_fields("The 1000-example pool is drawn with it. Choice-set construction and ordering use seeded_rng keyed by constant labels (overlap-pick, distinct-families, distinct-label, order) + source_id + K; the source ranking is a stable_int hash. There is no separate numeric seed."),
         "n_sources_requested": N_SOURCES,
         "k_values": list(K_VALUES),
         "set_types": list(SET_TYPES),

@@ -16,8 +16,8 @@ takes a prefix of it, so levels are nested (medium contains small) and size stri
 Every fragment's source id is stored. No label string is inserted.
 
 Context size is a configurable CHARACTER budget. The TypeSafe SDK exposes no context-window metadata,
-so no limit is assumed: `near_limit` is only the largest configured budget (bounded by the size of the
-irrelevant pool), and is NOT verified to be close to Jev's real limit. Actual input size is measured
+so no limit is assumed: `very_large` (8000 chars) is only the largest configured budget (bounded by the
+size of the irrelevant pool). It is NOT described as, or verified to be, near the supported context window. Actual input size is measured
 from the token usage recorded at evaluation time.
 """
 
@@ -47,7 +47,7 @@ CONTEXT_SEED = 7
 POOL_SAMPLE = "aligned_250"
 POOL_LOCALE = "en-US"
 # Character budgets of the irrelevant history per level (configurable; no SDK limit is assumed).
-CONTEXT_BUDGET_CHARS = {"none": 0, "small": 300, "medium": 1500, "large": 4000, "near_limit": 8000}
+CONTEXT_BUDGET_CHARS = {"none": 0, "small": 300, "medium": 1500, "large": 4000, "very_large": 8000}  # very_large = 8000 chars; NOT a claim about Jev's real limit
 LEVELS = tuple(CONTEXT_BUDGET_CHARS)
 
 
@@ -127,7 +127,7 @@ def build() -> tuple[list[dict[str, Any]], dict[str, Any]]:
         "irrelevant_pool_size": len(pool),
         "irrelevant_pool_total_chars": sum(len(p["text"]) for p in pool),
         "state_shape": {"none": {"message": "<target>"}, "others": {"message": "<target>", "history": ["<irrelevant text>", "..."]}},
-        "context_limit_note": "TypeSafe SDK exposes no context-window metadata; budgets are configurable and near_limit is NOT verified to approach Jev's real limit",
+        "context_limit_note": "TypeSafe SDK exposes no context-window metadata; budgets are configurable; very_large (8000 chars) is only the largest configured budget and is NOT claimed to approach Jev's real limit",
         "review_status": "pending_human_review",
     }
     return rows, meta

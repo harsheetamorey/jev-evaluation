@@ -60,6 +60,9 @@
   "phase1_baseline": "Phase I choice-scaling / Bitext K=5 results are the existing baseline; not repeated here",
   "review_status": "pending_human_review",
   "schema_version": 1,
+  "seed": 20260924,
+  "seed_note": "SOURCE_SEED seeds the selection of source examples (select_bitext_sources). The 1000-example pool is drawn with it. Choice-set construction and ordering use seeded_rng keyed by constant labels (overlap-pick, distinct-families, distinct-label, order) + source_id + K; the source ranking is a stable_int hash. There is no separate numeric seed.",
+  "seed_status": "recorded",
   "set_types": [
     "distinct",
     "overlapping"

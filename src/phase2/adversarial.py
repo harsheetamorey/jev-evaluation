@@ -29,6 +29,7 @@ from phase2.stress import (
     StressError,
     pair_results,
     select_bitext_sources,
+    source_selection_seed_fields,
     stable_int,
 )
 
@@ -90,6 +91,7 @@ def build() -> tuple[list[dict[str, Any]], dict[str, Any]]:
     meta = {
         "experiment": NAME,
         "source": "data/samples/bitext_main.jsonl via select_bitext_sources",
+        **source_selection_seed_fields("Each source's incorrect target is a stable_int hash of the source id (no further seed); attack templates are fixed."),
         "n_sources_requested": N_SOURCES,
         "attack_types": list(ATTACK_TYPES),
         "attack_templates": ATTACK_TEMPLATES,

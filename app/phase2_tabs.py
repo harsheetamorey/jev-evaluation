@@ -141,10 +141,10 @@ def render_risk_coverage(ui: SimpleNamespace) -> None:
 
 
 def render_stability(ui: SimpleNamespace) -> None:
-    ui.section("P2·3", "Stability", "Same decision when the wording changes (paraphrase / surface) or the text gets noisy?")
+    ui.section("P2·3", "Stability", "Same decision when the wording changes (surface variants vs intent-preserving paraphrases, kept separate) or the text gets noisy?")
     stab, noise = phase2_root() / "stability", phase2_root() / "noise"
     fam, typ = load_csv(stab / "stability_by_family.csv"), load_csv(stab / "stability_by_variant_type.csv")
-    st.markdown("#### Paraphrase and surface stability (paired with each source's original)")
+    st.markdown("#### Surface stability and intent-paraphrase robustness (paired with each source's original)")
     if fam is None:
         _missing(ui, "stability", "src/phase2/run_stability.py analyze", "stability")
     else:

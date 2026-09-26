@@ -24,6 +24,7 @@ import asyncio
 import hashlib
 import json
 import random
+import re
 import stat
 import time
 from collections.abc import Callable, Sequence
@@ -64,6 +65,54 @@ def stable_int(*parts: object) -> int:
 
 def seeded_rng(*parts: object) -> random.Random:
     return random.Random(stable_int(*parts))
+
+
+def seed_fields(seed: int | None, note: str) -> dict[str, Any]:
+    """Manifest fields describing a dataset's randomness. `seed=None` means none is involved (not_applicable), never "unknown"."""
+    return {"seed": seed, "seed_status": "recorded" if seed is not None else "not_applicable", "seed_note": note}
+
+
+def source_selection_seed_fields(derivation: str) -> dict[str, Any]:
+    """For datasets whose source examples come from `select_bitext_sources` (seeded by SOURCE_SEED)."""
+    return seed_fields(SOURCE_SEED, f"SOURCE_SEED seeds the selection of source examples (select_bitext_sources). {derivation}")
+
+
+# --- protected spans -----------------------------------------------------------------------------
+
+PLACEHOLDER_RE = re.compile(r"\{\{.*?\}\}")  # Bitext placeholders such as {{Order Number}}
+_SENTINEL_BASE = 0xE000  # Unicode private-use characters: not alphabetic, not punctuation, unchanged by case folding
+
+
+def placeholders(text: str) -> list[str]:
+    return PLACEHOLDER_RE.findall(text)
+
+
+def protected(fn: Callable[..., str]) -> Callable[..., str]:
+    """Wrap a text transformation `fn(text, ...)` so `{{...}}` spans pass through byte-for-byte unchanged.
+
+    Each placeholder is swapped for one private-use character before the transformation runs and swapped
+    back afterwards, so case, typo, punctuation, whitespace and abbreviation transforms cannot touch it.
+    """
+
+    def wrapper(text: str, *args: Any, **kwargs: Any) -> str:
+        spans = placeholders(text)
+        if not spans:
+            return fn(text, *args, **kwargs)
+        if any(_SENTINEL_BASE <= ord(c) < _SENTINEL_BASE + len(spans) for c in text):
+            raise StressError("text already contains the reserved private-use characters used to protect placeholders")
+        masked, pos = [], 0
+        for i, m in enumerate(PLACEHOLDER_RE.finditer(text)):
+            masked.append(text[pos : m.start()] + chr(_SENTINEL_BASE + i))
+            pos = m.end()
+        masked.append(text[pos:])
+        out = fn("".join(masked), *args, **kwargs)
+        for i, span in enumerate(spans):
+            out = out.replace(chr(_SENTINEL_BASE + i), span)
+        return out
+
+    wrapper.__name__ = getattr(fn, "__name__", "protected")
+    wrapper.__doc__ = fn.__doc__
+    return wrapper
 
 
 def select_bitext_sources(n: int = 100, seed: int = SOURCE_SEED, sample: str = "main") -> list[BitextRow]:

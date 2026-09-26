@@ -1,4 +1,14 @@
 {
+  "ambiguity_type_meaning": {
+    "clear": "original message",
+    "competing_intents": "two explicit plausible requests",
+    "underspecified": "information needed for a unique decision removed"
+  },
+  "ambiguity_types": [
+    "clear",
+    "competing_intents",
+    "underspecified"
+  ],
   "dataset": "dataset",
   "experiment": "ambiguity",
   "families": {
@@ -47,16 +57,20 @@
     ]
   },
   "generation_method": "deterministic hand-authored templates (no model generation)",
-  "levels": [
-    "CLEAR",
-    "SLIGHTLY_AMBIGUOUS",
-    "HIGHLY_AMBIGUOUS"
-  ],
+  "legacy_ambiguity_level_alias": {
+    "CLEAR": "clear",
+    "HIGHLY_AMBIGUOUS": "underspecified",
+    "SLIGHTLY_AMBIGUOUS": "competing_intents"
+  },
   "n_rows": 300,
   "n_source_examples": 100,
   "n_sources_requested": 100,
+  "ordinal_scale_claimed": false,
   "review_status": "pending_human_review",
   "schema_version": 1,
-  "sha256": "d8e43581cf10102463a6c4cebfe28eb73628c1993f928ecd014d88fa1cb71b48",
+  "seed": 20260924,
+  "seed_note": "SOURCE_SEED seeds the selection of source examples (select_bitext_sources). The 1000-example pool is drawn with it; the final 100 sources, the family partner and the variant text are then fixed by stable_int hashes of constant labels and the source id (no further seed).",
+  "seed_status": "recorded",
+  "sha256": "8bcdf8ddb1fa12318b1015d184bf5834da05bbbac346241125d9eaa7f34d4529",
   "source": "data/samples/bitext_main.jsonl (Bitext test split, frozen main sample)"
 }

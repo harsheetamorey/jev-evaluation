@@ -73,10 +73,10 @@ def test_built_dataset_is_deterministic_and_history_comes_from_the_unrelated_poo
     info = describe(rows)
     assert info["n_source_examples"] == 100 and info["counts_by_context_level"] == {lvl: 100 for lvl in LEVELS}
     means = info["history_items_by_level_mean"]
-    assert means["none"] == 0 and means["small"] < means["medium"] < means["large"] < means["near_limit"]
+    assert means["none"] == 0 and means["small"] < means["medium"] < means["large"] < means["very_large"]
     pool_ids = {p["source_id"] for p in irrelevant_pool()}
     assert all(set(r["context_source_ids"]) <= pool_ids for r in rows)
-    assert meta["irrelevant_pool_size"] == 250 and "NOT verified" in meta["context_limit_note"]
+    assert meta["irrelevant_pool_size"] == 250 and "NOT claimed" in meta["context_limit_note"] and "near_limit" not in meta["context_limit_note"]
     assert len({r["variant_id"] for r in rows}) == len(rows) and len(info["representative_examples"]) == 3
 
 

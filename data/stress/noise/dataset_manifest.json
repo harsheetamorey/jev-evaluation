@@ -2,7 +2,7 @@
   "dataset": "dataset",
   "experiment": "noise",
   "generation_method": "deterministic pure functions of (text, source_example_id, seed, noise_type, severity); no model",
-  "n_rows": 2051,
+  "n_rows": 2031,
   "n_source_examples": 100,
   "n_sources_requested": 100,
   "noise_types": [
@@ -25,7 +25,7 @@
     2,
     3
   ],
-  "sha256": "482305d33857cfc7fcf50d6a6af5f553e772d229aa5d6775c0d2bc5d73619d87",
+  "sha256": "f1623e292520b7bfb6fe3e4522461576d414d2bfa752cb1bcd12df037e44a423",
   "source": "data/samples/bitext_main.jsonl via phase2.stress.select_bitext_sources",
-  "variants_skipped_because_text_unchanged_or_duplicate": 449
+  "variants_skipped_because_text_unchanged_or_duplicate": 469
 }

@@ -131,3 +131,53 @@ def test_paired_noise_metrics_flip_rate_drop_delta_and_integrity_split() -> None
 def test_analyze_requires_clean_rows() -> None:
     with pytest.raises(StressError, match="clean"):
         analyze(_results().query("severity > 0"))
+
+
+PH_TEXT = "Please cancel order {{Order Number}} and email {{Email Address}} about it because your payment information is wrong."
+PH_SPANS = ["{{Order Number}}", "{{Email Address}}"]
+
+
+@pytest.mark.parametrize("noise_type", list(NOISE_FUNCS))
+@pytest.mark.parametrize("severity", SEVERITIES)
+def test_placeholders_survive_every_noise_type_and_severity_byte_for_byte(noise_type: str, severity: int) -> None:
+    from phase2.stress import placeholders
+
+    for i in range(25):  # many seeds so casing/typo/whitespace draws land everywhere
+        out = apply_noise(PH_TEXT, f"src-{i}", noise_type, severity)
+        found = placeholders(out)
+        assert all(s in found for s in PH_SPANS), (noise_type, severity, out)
+        assert set(found) == set(PH_SPANS), (noise_type, severity, out)  # nothing partial or new appears
+
+
+def test_placeholder_guard_is_transparent_without_placeholders_and_rejects_reserved_characters() -> None:
+    from phase2.stress import protected
+
+    assert protected(str.upper)("no braces here") == "NO BRACES HERE"
+    assert protected(str.upper)("cancel {{Order Number}} now") == "CANCEL {{Order Number}} NOW"
+    with pytest.raises(StressError, match="private-use"):
+        protected(str.upper)("bad  {{X}}")
+
+
+def test_frozen_noise_dataset_keeps_every_placeholder_unchanged() -> None:
+    from phase2.stress import placeholders
+
+    rows, _ = build()
+    with_ph = [r for r in rows if placeholders(r["original_text"])]
+    assert len(with_ph) > 300
+    for r in with_ph:
+        assert all(p in r["text"] for p in placeholders(r["original_text"])), r["variant_id"]
+        assert set(placeholders(r["text"])) == set(placeholders(r["original_text"])), r["variant_id"]
+
+
+def test_noise_reports_primary_valid_only_plus_all_rows_sensitivity_and_questionable_counts() -> None:
+    rows = []
+    for src, integ in (("s1", "valid"), ("s2", "questionable")):
+        rows.append({"provider": "jev", "source_example_id": src, "noise_type": "none", "severity": 0, "semantic_integrity": "valid", "expected_label": "a", "intent": "a", "prediction": "a", "confidence": 0.9, "correct": True, "latency_ms": 1.0})
+        rows.append({"provider": "jev", "source_example_id": src, "noise_type": "typos", "severity": 3, "semantic_integrity": integ, "expected_label": "a", "intent": "a", "prediction": "b" if integ == "questionable" else "a", "confidence": 0.5, "correct": integ == "valid", "latency_ms": 1.0})
+    tables, summary = analyze(pd.DataFrame(rows))
+    valid = tables["noise_valid_only_by_severity"].set_index("severity")
+    allrows = tables["noise_all_rows_by_severity"].set_index("severity")
+    assert valid.loc[3, "n_pairs"] == 1 and allrows.loc[3, "n_pairs"] == 2  # questionable rows are kept in the sensitivity view
+    counts = tables["noise_questionable_counts"].set_index("severity")
+    assert counts.loc[3, "valid"] == 1 and counts.loc[3, "questionable"] == 1 and counts.loc[3, "questionable_share"] == 0.5
+    assert summary["n_pairs_semantic_integrity_questionable"] == 1 and "all rows" in summary["sensitivity_summary"]

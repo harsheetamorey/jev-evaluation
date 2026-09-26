@@ -7,10 +7,16 @@ per source. Every transformation is a pure function of (source text, source_exam
 noise_type, severity): the same inputs always give the same output, no model is involved, and the
 frozen dataset stores every transformed text.
 
+Protected spans: Bitext placeholders (`{{...}}`) are swapped out before any transformation runs and restored
+byte-for-byte afterwards, so no noise type (typos, casing, punctuation, whitespace, emoji, abbreviations,
+duplication) can alter them.
+
 Semantic integrity: severe noise can make text unreadable or change its meaning, and that must not
 be silently counted as a model failure. Each row gets `semantic_integrity` = valid | questionable,
 from a deterministic heuristic (character similarity and token recall against the original, with
-emoji ignored). It is a FLAG for reporting, not a human judgement; analysis tables are split by it.
+emoji ignored). It is a FLAG for reporting, not a human judgement. The PRIMARY robustness summaries use
+rows marked valid; every table that splits by integrity, an all-rows sensitivity table and the counts of
+questionable rows are also written, and no questionable row is ever discarded.
 """
 
 import difflib
@@ -27,6 +33,7 @@ from phase2.stress import (
     StressError,
     grouped_paired_metrics,
     pair_results,
+    protected,
     seeded_rng,
     select_bitext_sources,
 )
@@ -40,7 +47,7 @@ SEVERITIES = (1, 2, 3)
 EMOJIS = ["🙂", "😡", "🙏", "😅", "👍", "❗"]
 KEY_NEIGHBORS = dict(zip("qwertyuiopasdfghjklzxcvbnm", "wertyuiopqsdfghjklaxcvbnmz", strict=True))
 ABBREVIATIONS = {"please": "pls", "you": "u", "your": "ur", "are": "r", "thanks": "thx", "because": "bc", "information": "info", "account": "acct", "message": "msg", "number": "no.", "customer": "cust", "service": "svc", "could": "cud", "about": "abt", "tomorrow": "tmrw", "payment": "pmt", "delivery": "deliv", "with": "w/", "for": "4", "to": "2", "and": "&"}
-PROTECTED = "{}"  # Bitext placeholders like {{Order Number}} are not punctuation noise targets
+PROTECTED = "{}"  # braces are never punctuation-noise targets; whole {{...}} spans are additionally protected by phase2.stress.protected
 INTEGRITY_MIN_CHAR_RATIO = 0.70
 INTEGRITY_MIN_TOKEN_RECALL = 0.50
 
@@ -183,7 +190,7 @@ def apply_noise(text: str, source_id: str, noise_type: str, severity: int, seed:
         return text
     if noise_type not in NOISE_FUNCS:
         raise StressError(f"unknown noise_type {noise_type!r}")
-    return NOISE_FUNCS[noise_type](text, seeded_rng(source_id, seed, noise_type, severity), severity)
+    return protected(NOISE_FUNCS[noise_type])(text, seeded_rng(source_id, seed, noise_type, severity), severity)
 
 
 def _tokens(text: str) -> list[str]:
@@ -268,6 +275,17 @@ def _with_drop(table: pd.DataFrame) -> pd.DataFrame:
     return table
 
 
+def questionable_counts(paired: pd.DataFrame) -> pd.DataFrame:
+    """Per provider and severity: how many pairs are valid vs questionable (nothing is dropped)."""
+    counts = paired.groupby(["provider", "severity", "semantic_integrity"]).size().unstack("semantic_integrity", fill_value=0)
+    for col in ("valid", "questionable"):
+        if col not in counts:
+            counts[col] = 0
+    counts["n_pairs"] = counts["valid"] + counts["questionable"]
+    counts["questionable_share"] = counts["questionable"] / counts["n_pairs"]
+    return counts[["valid", "questionable", "n_pairs", "questionable_share"]].reset_index()
+
+
 def analyze(results: pd.DataFrame) -> tuple[dict[str, pd.DataFrame], dict[str, Any]]:
     if not (results["severity"] == 0).any():
         raise StressError("No severity-0 (clean) rows; paired comparison needs each source's clean row.")
@@ -279,7 +297,9 @@ def analyze(results: pd.DataFrame) -> tuple[dict[str, pd.DataFrame], dict[str, A
         "noise_by_severity": _with_drop(grouped_paired_metrics(paired, ["provider", "severity", "semantic_integrity"])),
         "noise_by_type": _with_drop(grouped_paired_metrics(paired, ["provider", "noise_type", "semantic_integrity"])),
         "noise_by_type_severity": _with_drop(grouped_paired_metrics(paired, ["provider", "noise_type", "severity", "semantic_integrity"])),
-        "noise_valid_only_by_severity": _with_drop(grouped_paired_metrics(valid_only, ["provider", "severity"])),
+        "noise_valid_only_by_severity": _with_drop(grouped_paired_metrics(valid_only, ["provider", "severity"])),  # PRIMARY summary
+        "noise_all_rows_by_severity": _with_drop(grouped_paired_metrics(paired, ["provider", "severity"])),  # sensitivity: valid + questionable
+        "noise_questionable_counts": questionable_counts(paired),
         "noise_by_intent": _with_drop(grouped_paired_metrics(valid_only, ["provider", "dataset", "intent"])),
         "noise_pairs": paired[["provider", "source_example_id", "noise_type", "severity", "semantic_integrity", "expected_label", "prediction_base", "prediction_variant", "confidence_base", "confidence_variant", "correct_base", "correct_variant"]],
     }
@@ -289,8 +309,10 @@ def analyze(results: pd.DataFrame) -> tuple[dict[str, pd.DataFrame], dict[str, A
         "n_pairs": len(paired),
         "n_pairs_semantic_integrity_valid": len(valid_only),
         "n_pairs_semantic_integrity_questionable": len(paired) - len(valid_only),
+        "primary_summary": "noise_valid_only_by_severity (semantic_integrity == valid)",
+        "sensitivity_summary": "noise_all_rows_by_severity (all rows, valid + questionable); noise_questionable_counts lists the questionable rows per severity",
         "pairing": "each noisy variant vs its own source's severity-0 row (same provider)",
-        "note": "questionable rows are reported separately and are not silently counted as model failures",
+        "note": "questionable rows are kept, reported separately and never silently discarded or counted as model failures",
         "interpretation": "not concluded here; read rates together with n_pairs",
     }
     return tables, summary

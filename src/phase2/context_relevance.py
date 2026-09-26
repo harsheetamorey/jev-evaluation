@@ -35,6 +35,7 @@ from phase2.stress import (
     StressError,
     pair_results,
     paired_metrics,
+    seed_fields,
 )
 
 NAME = "context_relevance"
@@ -170,6 +171,7 @@ def build() -> tuple[list[dict[str, Any]], dict[str, Any]]:
         rows.extend(rows_for_triplet(i, label, target, relevant, irrelevant, cues, cand[label]))
     meta = {
         "experiment": NAME,
+        **seed_fields(None, "Hand-authored triplets with no randomness or sampling; the Bitext main sample is only read to look up each intent's candidate list."),
         "n_triplets": len(TRIPLETS),
         "conditions": list(CONDITIONS),
         "generation_method": "hand-authored triplets written once by the project author (no model generation); candidates are the real Bitext choice set for the expected intent",

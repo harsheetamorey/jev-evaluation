@@ -13,6 +13,9 @@
   "relevance_establishment": "vague target + cue phrases only in the relevant history + keyword validator (see module docstring); not proof, hence human review",
   "review_status": "pending_human_review",
   "schema_version": 1,
+  "seed": null,
+  "seed_note": "Hand-authored triplets with no randomness or sampling; the Bitext main sample is only read to look up each intent's candidate list.",
+  "seed_status": "not_applicable",
   "sha256": "9c343b97ce009e2ff222d9bdc5257bb5f5d9d0c1a9025a73262e9d0938062f27",
   "state_shape": {
     "no_context": {

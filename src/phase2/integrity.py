@@ -152,6 +152,15 @@ def _spec(name: str) -> ExperimentSpec:
     return importlib.import_module(STRESS_MODULES[name]).SPEC
 
 
+def seed_gaps(manifest: dict[str, Any]) -> list[str]:
+    """Empty when the manifest records a seed, or explicitly says none applies (`seed: null` + `seed_status: not_applicable`)."""
+    if manifest.get("seed_status") == "not_applicable" and manifest.get("seed") is None and "seed" in manifest:
+        return []
+    if any(manifest.get(k) is not None for k in SEED_KEYS):
+        return []
+    return ["no seed recorded in the dataset manifest (and no explicit seed_status: not_applicable)"]
+
+
 def stress_dataset_checks(stress_root: Path = STRESS_DIR) -> list[dict[str, str]]:
     out: list[dict[str, str]] = []
     for name in STRESS_MODULES:
@@ -171,7 +180,7 @@ def stress_dataset_checks(stress_root: Path = STRESS_DIR) -> list[dict[str, str]
         rebuilt, _ = spec.build()
         if json.dumps(rebuilt, sort_keys=True, default=str) != json.dumps(rows, sort_keys=True, default=str):
             problems.append("rebuilding from code does not reproduce the frozen rows")
-        gaps = [] if any(k in manifest for k in SEED_KEYS) else ["no seed key stored in the dataset manifest"]
+        gaps = seed_gaps(manifest)
         detail = f"{len(rows)} rows, {manifest['n_source_examples']} source ids, sha256 {manifest['sha256'][:12]}, deterministic rebuild {'ok' if not problems else 'FAILED'}"
         out.append(check(f"stress dataset {name}", "fail" if problems else "pass", "; ".join(problems) or detail))
         if gaps:
@@ -317,7 +326,7 @@ def build_phase2_manifest(baseline_dir: Path = BASELINE_DIR, existing_root: Path
         m = json.loads((stress_root / name / "dataset_manifest.json").read_text())
         rows, _ = load_frozen_dataset(stress_root / name)
         stress[name] = {"path": str(stress_root / name), "dataset_sha256": m["sha256"], "manifest_sha256": sha256_file(stress_root / name / "dataset_manifest.json"), "n_rows": m["n_rows"], "n_source_examples": m["n_source_examples"],
-                        "source_example_ids_sha256": _sha_text("\n".join(sorted({r["source_example_id"] for r in rows}))), "seeds_stored_in_manifest": {k: m[k] for k in SEED_KEYS if k in m} or NOT_RECORDED, "review_status": m.get("review_status")}
+                        "source_example_ids_sha256": _sha_text("\n".join(sorted({r["source_example_id"] for r in rows}))), "seeds_stored_in_manifest": {k: m[k] for k in (*SEED_KEYS, "seed_status") if k in m} or NOT_RECORDED, "review_status": m.get("review_status")}
     canonical = pd.read_parquet(baseline_dir / CANONICAL_NAME)
     return {
         "schema_version": 1,

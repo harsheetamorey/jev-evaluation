@@ -150,3 +150,27 @@ def test_repository_checks_pass_on_the_real_frozen_baseline() -> None:
     failed = [r for r in repository_checks() if r["status"] == "fail"]
     # An uncommitted tracked file legitimately shows as a git difference while work is in progress; anything else must pass.
     assert all("tracked manifests" in r["check"] for r in failed), failed
+
+
+def test_seed_gaps_accept_a_recorded_seed_or_an_explicit_not_applicable_and_flag_silence() -> None:
+    from phase2.integrity import seed_gaps
+
+    assert seed_gaps({"seed": 20260924, "seed_status": "recorded"}) == []
+    assert seed_gaps({"context_seed": 7}) == []
+    assert seed_gaps({"seed": None, "seed_status": "not_applicable"}) == []
+    assert seed_gaps({}) and seed_gaps({"seed": None}) and seed_gaps({"seed_status": "not_applicable"})  # silence / null without the explicit status is still a gap
+
+
+def test_frozen_stress_manifests_state_their_seed_or_that_none_applies() -> None:
+    import json
+
+    from phase2.integrity import STRESS_MODULES, seed_gaps
+    from phase2.stress import SOURCE_SEED, STRESS_DIR
+
+    for name in STRESS_MODULES:
+        m = json.loads((STRESS_DIR / name / "dataset_manifest.json").read_text())
+        assert seed_gaps(m) == [], name
+    rel = json.loads((STRESS_DIR / "context_relevance" / "dataset_manifest.json").read_text())
+    assert rel["seed"] is None and rel["seed_status"] == "not_applicable"
+    co = json.loads((STRESS_DIR / "choice_overlap" / "dataset_manifest.json").read_text())
+    assert co["seed"] == SOURCE_SEED and co["seed_status"] == "recorded"

@@ -15,6 +15,7 @@ from phase2.stability import (
     surface_exclaim,
     surface_lowercase_nopunct,
     surface_typo,
+    variant_family,
     variants_for_source,
 )
 from phase2.stress import StressError
@@ -61,7 +62,7 @@ def test_variants_retain_source_id_and_drop_duplicates() -> None:
     assert "surface_uppercase" in dropped  # already upper case -> identical to the original
     assert all(r["original_text"] == "CANCEL" and r["expected_label"] == "cancel_order" for r in rows)
     assert len({r["variant_id"] for r in rows}) == len(rows)
-    assert {r["variant_family"] for r in rows} <= {"original", "surface", "paraphrase"}
+    assert {r["variant_family"] for r in rows} <= {"original", "surface", "intent_paraphrase"}
 
 
 def test_built_dataset_is_deterministic_and_families_are_separate() -> None:
@@ -69,10 +70,11 @@ def test_built_dataset_is_deterministic_and_families_are_separate() -> None:
     assert rows == build()[0]
     info = describe(rows)
     assert info["n_source_examples"] == 100 and info["counts_by_variant_type"]["original"] == 100
-    assert info["counts_by_family"]["paraphrase"] == 300 and len(info["example_families"]) == 10
+    assert info["counts_by_family"]["intent_paraphrase"] == 300 and len(info["example_families"]) == 10
     assert meta["review_status"] == "pending_human_review" and "no model generation" in meta["generation_method"]
+    assert "does NOT preserve" in meta["family_meaning"]["intent_paraphrase"] and "paraphrase" not in {r["variant_family"] for r in rows}
     for r in rows:
-        assert (r["variant_family"] == "paraphrase") == r["variant_type"].startswith("paraphrase_")
+        assert (r["variant_family"] == "intent_paraphrase") == r["variant_type"].startswith("intent_paraphrase_")
         assert r["expected_label"] in r["candidates"]
     by_src = pd.DataFrame(rows).groupby("source_example_id")["text"].apply(lambda s: s.str.strip().str.replace(r"\s+", " ", regex=True).nunique() == len(s))
     assert by_src.all()  # no duplicate texts survive within a source
@@ -82,12 +84,12 @@ def test_built_dataset_is_deterministic_and_families_are_separate() -> None:
 def _results() -> pd.DataFrame:
     rows = []
     spec = {
-        "s1": {"original": ("a", 0.9, True), "surface_typo": ("a", 0.8, True), "paraphrase_1": ("b", 0.5, False)},
-        "s2": {"original": ("a", 0.9, True), "surface_typo": ("a", 0.9, True), "paraphrase_1": ("a", 0.7, True)},
+        "s1": {"original": ("a", 0.9, True), "surface_typo": ("a", 0.8, True), "intent_paraphrase_1": ("b", 0.5, False)},
+        "s2": {"original": ("a", 0.9, True), "surface_typo": ("a", 0.9, True), "intent_paraphrase_1": ("a", 0.7, True)},
     }
     for src, vs in spec.items():
         for vtype, (pred, conf, ok) in vs.items():
-            rows.append({"provider": "jev", "source_example_id": src, "variant_type": vtype, "variant_family": vtype.split("_")[0], "intent": "cancel_order", "expected_label": "a", "prediction": pred, "confidence": conf, "correct": ok, "latency_ms": 1.0})
+            rows.append({"provider": "jev", "source_example_id": src, "variant_type": vtype, "variant_family": variant_family(vtype), "intent": "cancel_order", "expected_label": "a", "prediction": pred, "confidence": conf, "correct": ok, "latency_ms": 1.0})
     return pd.DataFrame(rows)
 
 
@@ -95,15 +97,15 @@ def test_pair_joining_label_agreement_flip_rate_and_confidence_delta() -> None:
     tables, summary = analyze(_results())
     t = tables["stability_by_variant_type"].set_index("variant_type")
     assert t.loc["surface_typo", "decision_flip_rate"] == 0.0 and t.loc["surface_typo", "label_agreement"] == 1.0
-    assert t.loc["paraphrase_1", "decision_flip_rate"] == 0.5 and t.loc["paraphrase_1", "n_pairs"] == 2
-    assert t.loc["paraphrase_1", "accuracy_base"] == 1.0 and t.loc["paraphrase_1", "accuracy_variant"] == 0.5
-    assert t.loc["paraphrase_1", "accuracy_delta"] == pytest.approx(-0.5)
+    assert t.loc["intent_paraphrase_1", "decision_flip_rate"] == 0.5 and t.loc["intent_paraphrase_1", "n_pairs"] == 2
+    assert t.loc["intent_paraphrase_1", "accuracy_base"] == 1.0 and t.loc["intent_paraphrase_1", "accuracy_variant"] == 0.5
+    assert t.loc["intent_paraphrase_1", "accuracy_delta"] == pytest.approx(-0.5)
     assert t.loc["surface_typo", "mean_abs_confidence_delta"] == pytest.approx((0.1 + 0.0) / 2)
-    assert t.loc["paraphrase_1", "mean_confidence_delta"] == pytest.approx(((0.5 - 0.9) + (0.7 - 0.9)) / 2)
+    assert t.loc["intent_paraphrase_1", "mean_confidence_delta"] == pytest.approx(((0.5 - 0.9) + (0.7 - 0.9)) / 2)
     pairs = tables["stability_pairs"]
     assert set(pairs["source_example_id"]) == {"s1", "s2"} and (pairs["confidence_delta"].notna()).all()
     fam = tables["stability_by_family"].set_index("variant_family")
-    assert set(fam.index) == {"surface", "paraphrase"} and summary["pairing"].startswith("every variant")
+    assert set(fam.index) == {"surface", "intent_paraphrase"} and summary["pairing"].startswith("every variant")
 
 
 def test_confidence_variance_within_a_source_family() -> None:
@@ -115,3 +117,25 @@ def test_confidence_variance_within_a_source_family() -> None:
 def test_analyze_requires_originals() -> None:
     with pytest.raises(StressError, match="original"):
         analyze(_results().query("variant_type != 'original'"))
+
+
+def test_surface_variants_leave_placeholders_untouched_and_families_are_named_by_meaning() -> None:
+    from phase2.stress import placeholders
+
+    text = "I want to CANCEL order {{Order Number}} please, contact {{Email Address}}."
+    for name, fn in SURFACE_FUNCS.items():
+        out = fn(text, "src-1")
+        assert set(placeholders(out)) == {"{{Order Number}}", "{{Email Address}}"}, (name, out)
+    assert SURFACE_FUNCS["surface_uppercase"](text, "s") == "I WANT TO CANCEL ORDER {{Order Number}} PLEASE, CONTACT {{Email Address}}."
+    assert SURFACE_FUNCS["surface_lowercase_nopunct"](text, "s") == "i want to cancel order {{Order Number}} please contact {{Email Address}}"
+    assert variant_family("surface_typo") == "surface" and variant_family("intent_paraphrase_2") == "intent_paraphrase"
+
+
+def test_frozen_stability_dataset_keeps_every_placeholder_unchanged_in_surface_rows() -> None:
+    from phase2.stress import placeholders
+
+    rows, _ = build()
+    surface = [r for r in rows if r["variant_family"] == "surface" and placeholders(r["original_text"])]
+    assert len(surface) > 50
+    for r in surface:
+        assert set(placeholders(r["text"])) == set(placeholders(r["original_text"])), r["variant_id"]

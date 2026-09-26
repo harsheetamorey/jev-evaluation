@@ -137,10 +137,10 @@ def test_context_conditions_ambiguity_ood_and_noise_rules() -> None:
     got = {f["stress_condition"]: f["primary_failure_type"] for f in stress_failures("context_relevance", ctx, "c.parquet")}
     assert got == {"no_context": "insufficient_context", "irrelevant_context": "irrelevant_context", "relevant_context": None}
 
-    amb = stress([{"provider": "jev", "source_example_id": "s1", "variant_id": f"s1:{lvl}", "ambiguity_level": lvl, "original_text": "orig", "text": "orig", "ground_truth": gt, "prediction": "z", "correct": None if gt is None else False, "confidence": 0.7, "acceptable_intents": json.dumps(acc), "primary_expected_intent": gt, "family": "refund"}
-                  for lvl, gt, acc in (("CLEAR", "a", ["a"]), ("HIGHLY_AMBIGUOUS", None, ["a", "b"]))])
+    amb = stress([{"provider": "jev", "source_example_id": "s1", "variant_id": f"s1:{lvl}", "ambiguity_type": lvl, "original_text": "orig", "text": "orig", "ground_truth": gt, "prediction": "z", "correct": None if gt is None else False, "confidence": 0.7, "acceptable_intents": json.dumps(acc), "primary_expected_intent": gt, "family": "refund"}
+                  for lvl, gt, acc in (("clear", "a", ["a"]), ("underspecified", None, ["a", "b"]))])
     got = {f["stress_condition"]: f["primary_failure_type"] for f in stress_failures("ambiguity", amb, "a.parquet")}
-    assert got == {"CLEAR": None, "HIGHLY_AMBIGUOUS": "ambiguous_intent"}  # an ambiguous-level miss is tagged; a CLEAR miss is not
+    assert got == {"clear": None, "underspecified": "ambiguous_intent"}  # a non-clear miss is tagged; a clear miss is not
 
     ood = stress([{"provider": "jev", "source_example_id": p, "variant_id": f"{p}:{c}", "population": p, "contract_type": c, "text": "play jazz", "ground_truth": None, "prediction": pred, "correct": None, "confidence": 0.9, "massive_intent": "m", "matched_control_id": "c"} for p, c, pred in (("ood", "forced_choice", "get_refund"), ("ood", "explicit_fallback", "other"), ("ood", "explicit_fallback", "get_refund"))])
     keys = {f["source_key"] for f in stress_failures("ood", ood.assign(variant_id=["v1", "v2", "v3"]), "o.parquet")}
