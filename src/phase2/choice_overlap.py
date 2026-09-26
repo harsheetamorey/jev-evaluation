@@ -24,6 +24,7 @@ import pandas as pd
 
 from phase2.stress import (
     PHASE2_RESULTS_DIR,
+    REVIEW_FIELDS,
     STRESS_DIR,
     ExperimentSpec,
     StressError,
@@ -126,7 +127,7 @@ def build() -> tuple[list[dict[str, Any]], dict[str, Any]]:
         "construction": "overlapping = truth + K-1 labels from the truth's family; distinct = truth + K-1 labels from K-1 different other families; seeded; all real Bitext labels",
         "phase1_baseline": "Phase I choice-scaling / Bitext K=5 results are the existing baseline; not repeated here",
         "generation_method": "deterministic seeded construction; no model",
-        "review_status": "pending_human_review",
+        **REVIEW_FIELDS,
     }
     return rows, meta
 

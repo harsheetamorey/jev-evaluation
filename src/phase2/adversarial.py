@@ -24,6 +24,7 @@ import pandas as pd
 
 from phase2.stress import (
     PHASE2_RESULTS_DIR,
+    REVIEW_FIELDS,
     STRESS_DIR,
     ExperimentSpec,
     StressError,
@@ -99,7 +100,7 @@ def build() -> tuple[list[dict[str, Any]], dict[str, Any]]:
         "target_rule": "deterministic incorrect candidate: sorted(wrong candidates)[stable_int('adversarial-target', source_id) % n]",
         "generation_method": "fixed templates; no model generation",
         "definitions": {"attack_success": "attacked_prediction == target_label AND clean_prediction != target_label"},
-        "review_status": "pending_human_review",
+        **REVIEW_FIELDS,
     }
     return rows, meta
 

@@ -17,6 +17,9 @@ from phase2.integrity import (
     build_phase2_manifest,
     check,
     live_reproduction_plan,
+    live_result_checks,
+    live_results_record,
+    live_stress_summary,
     pipeline_selfcheck,
     render_plan_markdown,
     stress_dataset_checks,
@@ -174,3 +177,46 @@ def test_frozen_stress_manifests_state_their_seed_or_that_none_applies() -> None
     assert rel["seed"] is None and rel["seed_status"] == "not_applicable"
     co = json.loads((STRESS_DIR / "choice_overlap" / "dataset_manifest.json").read_text())
     assert co["seed"] == SOURCE_SEED and co["seed_status"] == "recorded"
+
+
+def _fake_results(dataset_dir: str, results_dir: Path, drop: int = 0, errors: int = 0, dup: bool = False) -> Path:
+    rows = [json.loads(line) for line in Path(dataset_dir, "dataset.jsonl").read_text().splitlines()]
+    frame = pd.DataFrame({"variant_id": [r["variant_id"] for r in rows], "provider": "jev", "error": None, "input_tokens": 10, "output_tokens": 2, "estimated_cost_usd": 0.001})
+    if errors:
+        frame.loc[: errors - 1, "error"] = "boom"
+    if drop:
+        frame = frame.iloc[drop:]
+    if dup:
+        frame = pd.concat([frame, frame.iloc[:1]])
+    results_dir.mkdir(parents=True)
+    path = results_dir / "raw_results_jev.parquet"
+    frame.to_parquet(path)
+    return path
+
+
+def test_live_results_record_measures_rows_errors_tokens_cost_hash_and_status(tmp_path: Path) -> None:
+    from phase2.baseline import sha256_file
+
+    path = _fake_results("data/stress/context_relevance", tmp_path / "context")  # context_relevance writes to <root>/context
+    record = live_results_record(tmp_path)
+    r = record["context_relevance"]
+    f = r["result_files"][0]
+    assert r["status"] == "complete" and r["expected_rows"] == 90 and f["rows"] == 90 and f["api_error_count"] == 0
+    assert f["provider"] == ["jev"] and f["input_tokens"] == 900 and f["output_tokens"] == 180 and f["estimated_cost_usd"] == pytest.approx(0.09)
+    assert f["sha256"] == sha256_file(path) and len(r["dataset_sha256"]) == 64
+    assert all(record[n]["status"] == "not_run" and record[n]["result_files"] == [] for n in STRESS_MODULES if n != "context_relevance")
+    summary = live_stress_summary(record)
+    assert summary["recorded"] == ["context_relevance"] and summary["total_rows"] == 90 and summary["n_experiments_complete"] == 1
+    checks = {c["check"]: c["status"] for c in live_result_checks(tmp_path)}
+    assert checks["live results context_relevance"] == "pass" and checks["live results ambiguity"] == "warn"
+
+
+def test_live_results_record_flags_missing_duplicate_and_errored_rows(tmp_path: Path) -> None:
+    _fake_results("data/stress/context_relevance", tmp_path / "context", drop=2)
+    assert live_results_record(tmp_path)["context_relevance"]["status"] == "incomplete"
+    assert {c["check"]: c["status"] for c in live_result_checks(tmp_path)}["live results context_relevance"] == "fail"
+    _fake_results("data/stress/ood", tmp_path / "ood", errors=3)
+    ood = live_results_record(tmp_path)["ood"]
+    assert ood["status"] == "complete_with_errors" and ood["result_files"][0]["api_error_count"] == 3
+    _fake_results("data/stress/ambiguity", tmp_path / "ambiguity", dup=True)
+    assert live_results_record(tmp_path)["ambiguity"]["status"] == "incomplete"  # 301 rows for 300 frozen ids

@@ -80,7 +80,7 @@ def test_built_dataset_is_deterministic_complete_and_loads_from_a_frozen_dir(tmp
         assert (r["ground_truth"] is None) == (r["ambiguity_type"] == "underspecified")
     write_frozen_dataset(tmp_path, rows, meta)
     loaded, manifest = load_frozen_dataset(tmp_path)
-    assert loaded == rows and manifest["n_rows"] == 300 and manifest["review_status"] == "pending_human_review"
+    assert loaded == rows and manifest["n_rows"] == 300 and manifest["review_status"] == "approved"
     info = describe(rows)
     assert info["n_variants"] == 300 and info["counts_by_ambiguity_type"]["clear"] == 100 and len(info["representative_examples"]) >= 10
 

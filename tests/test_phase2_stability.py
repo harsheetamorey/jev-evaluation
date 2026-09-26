@@ -71,7 +71,7 @@ def test_built_dataset_is_deterministic_and_families_are_separate() -> None:
     info = describe(rows)
     assert info["n_source_examples"] == 100 and info["counts_by_variant_type"]["original"] == 100
     assert info["counts_by_family"]["intent_paraphrase"] == 300 and len(info["example_families"]) == 10
-    assert meta["review_status"] == "pending_human_review" and "no model generation" in meta["generation_method"]
+    assert meta["review_status"] == "approved" and "no model generation" in meta["generation_method"]
     assert "does NOT preserve" in meta["family_meaning"]["intent_paraphrase"] and "paraphrase" not in {r["variant_family"] for r in rows}
     for r in rows:
         assert (r["variant_family"] == "intent_paraphrase") == r["variant_type"].startswith("intent_paraphrase_")

@@ -34,6 +34,7 @@ from dataset_loaders.massive import load_sample
 from phase2.context_relevance import KEYWORDS
 from phase2.stress import (
     PHASE2_RESULTS_DIR,
+    REVIEW_FIELDS,
     STRESS_DIR,
     ExperimentSpec,
     StressError,
@@ -132,7 +133,7 @@ def build() -> tuple[list[dict[str, Any]], dict[str, Any]]:
         "false_confidence_thresholds": list(FALSE_CONFIDENCE_THRESHOLDS),
         "seed": OOD_SEED,
         "alternative_source_pending_approval": "AG News (requires download; not fetched)",
-        "review_status": "pending_human_review",
+        **REVIEW_FIELDS,
     }
     return rows, meta
 

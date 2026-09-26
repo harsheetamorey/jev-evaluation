@@ -29,6 +29,7 @@ import pandas as pd
 from dataset_loaders.massive import load_sample
 from phase2.stress import (
     PHASE2_RESULTS_DIR,
+    REVIEW_FIELDS,
     STRESS_DIR,
     ExperimentSpec,
     StressError,
@@ -128,7 +129,7 @@ def build() -> tuple[list[dict[str, Any]], dict[str, Any]]:
         "irrelevant_pool_total_chars": sum(len(p["text"]) for p in pool),
         "state_shape": {"none": {"message": "<target>"}, "others": {"message": "<target>", "history": ["<irrelevant text>", "..."]}},
         "context_limit_note": "TypeSafe SDK exposes no context-window metadata; budgets are configurable; very_large (8000 chars) is only the largest configured budget and is NOT claimed to approach Jev's real limit",
-        "review_status": "pending_human_review",
+        **REVIEW_FIELDS,
     }
     return rows, meta
 

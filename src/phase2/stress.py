@@ -67,6 +67,13 @@ def seeded_rng(*parts: object) -> random.Random:
     return random.Random(stable_int(*parts))
 
 
+REVIEW_FIELDS = {
+    "review_status": "approved",
+    "review_note": "Datasets were reviewed by the project owner before any live run (methodology cleanup and spot-check packets, 2026-09-25). Approval was recorded in this manifest after the live runs completed; no dataset row or hash changed.",
+    "review_recorded_on": "2026-09-25",
+}
+
+
 def seed_fields(seed: int | None, note: str) -> dict[str, Any]:
     """Manifest fields describing a dataset's randomness. `seed=None` means none is involved (not_applicable), never "unknown"."""
     return {"seed": seed, "seed_status": "recorded" if seed is not None else "not_applicable", "seed_note": note}

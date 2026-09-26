@@ -28,6 +28,7 @@ import pandas as pd
 
 from phase2.stress import (
     PHASE2_RESULTS_DIR,
+    REVIEW_FIELDS,
     STRESS_DIR,
     ExperimentSpec,
     StressError,
@@ -242,7 +243,7 @@ def build() -> tuple[list[dict[str, Any]], dict[str, Any]]:
         "generation_method": "deterministic pure functions of (text, source_example_id, seed, noise_type, severity); no model",
         "semantic_integrity_rule": f"questionable if char_ratio < {INTEGRITY_MIN_CHAR_RATIO} or token_recall < {INTEGRITY_MIN_TOKEN_RECALL} (heuristic flag, not human-verified)",
         "variants_skipped_because_text_unchanged_or_duplicate": skipped,
-        "review_status": "pending_human_review",
+        **REVIEW_FIELDS,
     }
     return rows, meta
 

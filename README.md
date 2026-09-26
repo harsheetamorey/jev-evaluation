@@ -128,11 +128,11 @@ Jev request.
   rate is from the owner's notes and unverified. Cascade latency is a simulated
   sequential sum of measured per-call latencies, not a measured cascade.
 - Paraphrases (`stability`) and context triplets (`context_relevance`) are
-  hand-authored, frozen, and marked `pending_human_review`. The OOD source is
+  hand-authored, frozen, and reviewed and marked `approved` (`review_status` in each dataset manifest). The OOD source is
   MASSIVE en-US utterances (already local); AG News was not downloaded. No
   context-window limit is assumed for Jev; context budgets are configurable.
-- Five frozen datasets do not store their selection seed in their manifest
-  (the rows are frozen and rebuild deterministically; the seed constants are
-  recorded in `phase2_manifest.json`).
+- Every frozen stress manifest records its seed (`seed`, `seed_status`,
+  `seed_note`); `context_relevance` is hand-authored and states
+  `seed: null, seed_status: not_applicable`.
 - Thresholds, tags and cascade settings are configuration and slicing choices,
   not recommended operating points, and no "best" architecture is selected.

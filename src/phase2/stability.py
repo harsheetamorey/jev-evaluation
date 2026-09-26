@@ -28,6 +28,7 @@ import pandas as pd
 
 from phase2.stress import (
     PHASE2_RESULTS_DIR,
+    REVIEW_FIELDS,
     STRESS_DIR,
     ExperimentSpec,
     StressError,
@@ -170,7 +171,7 @@ def build() -> tuple[list[dict[str, Any]], dict[str, Any]]:
         "generation_method": "surface: deterministic functions; intent_paraphrase: hand-authored intent-level bank written once by the project author (no model generation)",
         "family_meaning": {"surface": "semantic/surface stability (meaning and details unchanged)", "intent_paraphrase": "intent-preserving paraphrase robustness; does NOT preserve every source-specific detail"},
         "duplicate_variants_dropped": dropped_total,
-        "review_status": "pending_human_review",
+        **REVIEW_FIELDS,
     }
     return rows, meta
 

@@ -30,6 +30,7 @@ import pandas as pd
 from dataset_loaders.bitext import load_sample
 from phase2.stress import (
     PHASE2_RESULTS_DIR,
+    REVIEW_FIELDS,
     STRESS_DIR,
     ExperimentSpec,
     StressError,
@@ -177,7 +178,7 @@ def build() -> tuple[list[dict[str, Any]], dict[str, Any]]:
         "generation_method": "hand-authored triplets written once by the project author (no model generation); candidates are the real Bitext choice set for the expected intent",
         "relevance_establishment": "vague target + cue phrases only in the relevant history + keyword validator (see module docstring); not proof, hence human review",
         "state_shape": {"no_context": {"message": "<target>"}, "others": {"message": "<target>", "history": ["<one history sentence>"]}},
-        "review_status": "pending_human_review",
+        **REVIEW_FIELDS,
     }
     return rows, meta
 

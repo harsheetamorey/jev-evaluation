@@ -15,7 +15,9 @@
     "abbreviations",
     "word_duplication"
   ],
-  "review_status": "pending_human_review",
+  "review_note": "Datasets were reviewed by the project owner before any live run (methodology cleanup and spot-check packets, 2026-09-25). Approval was recorded in this manifest after the live runs completed; no dataset row or hash changed.",
+  "review_recorded_on": "2026-09-25",
+  "review_status": "approved",
   "schema_version": 1,
   "seed": 6,
   "semantic_integrity_rule": "questionable if char_ratio < 0.7 or token_recall < 0.5 (heuristic flag, not human-verified)",

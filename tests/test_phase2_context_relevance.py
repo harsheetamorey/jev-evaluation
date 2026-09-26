@@ -59,7 +59,7 @@ def test_built_dataset_is_deterministic_and_complete() -> None:
     info = describe(rows)
     assert info["n_triplets"] == 30 and info["n_rows"] == 90 and info["counts_by_condition"] == {c: 30 for c in CONDITIONS}
     assert info["distinct_expected_intents"] >= 20 and len(info["example_triplets"]) >= 10
-    assert meta["review_status"] == "pending_human_review" and "no model generation" in meta["generation_method"]
+    assert meta["review_status"] == "approved" and "no model generation" in meta["generation_method"]
     assert len({r["variant_id"] for r in rows}) == 90
 
 

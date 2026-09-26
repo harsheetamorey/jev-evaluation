@@ -225,7 +225,9 @@
     "massive:en-US:9592",
     "massive:en-US:9656"
   ],
-  "review_status": "pending_human_review",
+  "review_note": "Datasets were reviewed by the project owner before any live run (methodology cleanup and spot-check packets, 2026-09-25). Approval was recorded in this manifest after the live runs completed; no dataset row or hash changed.",
+  "review_recorded_on": "2026-09-25",
+  "review_status": "approved",
   "schema_version": 1,
   "seed": 9,
   "sha256": "e96ddda5c5ad0a188b69b80de943bbc9f651dbc3c156b2d22053cf9876002b86"

@@ -15,6 +15,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 from phase2.integrity import (  # noqa: E402
     DOCS_PLAN,
     MANIFEST_OUT,
+    live_result_checks,
     live_reproduction_plan,
     pipeline_selfcheck,
     regeneration_checks,
@@ -36,7 +37,7 @@ def main(argv: list[str] | None = None) -> int:
     args = parser.parse_args(argv)
 
     if args.command == "verify":
-        results = repository_checks() + stress_dataset_checks() + pipeline_selfcheck() + ([] if args.skip_regeneration else regeneration_checks())
+        results = repository_checks() + stress_dataset_checks() + live_result_checks() + pipeline_selfcheck() + ([] if args.skip_regeneration else regeneration_checks())
         for r in results:
             print(f"[{r['status'].upper():4}] {r['check']}" + (f"\n         {r['detail']}" if r["detail"] else ""))
         counts = {s: sum(r["status"] == s for r in results) for s in ("pass", "fail", "warn", "info")}

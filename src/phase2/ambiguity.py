@@ -53,6 +53,7 @@ import pandas as pd
 
 from phase2.stress import (
     PHASE2_RESULTS_DIR,
+    REVIEW_FIELDS,
     STRESS_DIR,
     ExperimentSpec,
     StressError,
@@ -204,7 +205,7 @@ def build() -> tuple[list[dict[str, Any]], dict[str, Any]]:
         "ordinal_scale_claimed": False,
         "families": {k: v[0] for k, v in FAMILIES.items()},
         "generation_method": "deterministic hand-authored templates (no model generation)",
-        "review_status": "pending_human_review",
+        **REVIEW_FIELDS,
     }
     return rows, meta
 
