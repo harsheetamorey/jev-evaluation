@@ -124,6 +124,8 @@ def test_strict_versus_acceptable_set_accuracy_and_paired_flips() -> None:
     pairs = tables["ambiguity_pairs"]
     assert set(pairs["source_example_id"]) == {"s1", "s2"} and "original_prediction" in pairs and "ambiguous_prediction" in pairs
     assert t.loc["underspecified", "n_distinct_predictions"] == 2 and t.loc["competing_intents", "modal_prediction_share"] == 0.5
+    assert t.loc["underspecified", "acceptable_set_accuracy_role"] == "descriptive_only" and t.loc["clear", "strict_accuracy_role"] == "valid"
+    assert set(summary["interpretation_rules"]) == {"clear", "competing_intents", "underspecified"}
     assert summary["ordinal_scale_claimed"] is False and "no monotonic" in summary["interpretation"]
     assert not any("monotonic" in c or "trend" in c for c in tables["ambiguity_by_condition"].columns)  # no cross-condition trend is computed
 
