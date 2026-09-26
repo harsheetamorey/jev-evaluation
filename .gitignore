@@ -30,3 +30,4 @@ data/results/phase2/*
 data/results/phase2/baseline/*
 !data/results/phase2/baseline/baseline_manifest.json
 !data/results/phase2/baseline/canonical_dedup_report.csv
+!data/results/phase2/phase2_manifest.json
